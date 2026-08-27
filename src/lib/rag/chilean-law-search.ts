@@ -41,6 +41,22 @@ function loadIndex(): LawIndexEntry[] {
   return indexCache!;
 }
 
+function normalize(s: string): string {
+  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+const fileCache = new Map<string, { articles: { number: string; title: string; text: string }[] }>();
+
+function getFileArticles(identifier: string): { number: string; title: string; text: string }[] {
+  const cached = fileCache.get(identifier);
+  if (cached) return cached.articles;
+  const filePath = path.join(getLeyesDir(), `${identifier}.md`);
+  if (!fs.existsSync(filePath)) return [];
+  const articles = extractArticles(fs.readFileSync(filePath, 'utf-8'));
+  fileCache.set(identifier, { articles });
+  return articles;
+}
+
 // Key Chilean laws for priority search
 // IDs verificados en el corpus data/leyes/cl (nunca inventar normas).
 const PRIORITY_LAWS: Record<string, string> = {
@@ -52,6 +68,12 @@ const PRIORITY_LAWS: Record<string, string> = {
   'vacaciones': 'CL-207436',
   'finiquito': 'CL-207436',
   'indemnización': 'CL-207436',
+  'horas': 'CL-207436',
+  'extra': 'CL-207436',
+  'salario': 'CL-207436',
+  'sueldo': 'CL-207436',
+  'licencia': 'CL-207436',
+  'feriado': 'CL-207436',
   'constitución': 'CL-242302',
   'constitucional': 'CL-242302',
   'derechos': 'CL-242302',
@@ -91,6 +113,8 @@ const PRIORITY_LAWS: Record<string, string> = {
   'aeronáutico': 'CL-30287',
 };
 
+const PRIORITY_VALUES = new Set(Object.values(PRIORITY_LAWS));
+
 interface ChileanLawChunk {
   identifier: string;
   title: string;
@@ -129,12 +153,8 @@ function extractArticles(content: string): { number: string; title: string; text
   return articles;
 }
 
-function searchInFile(identifier: string, keywords: string[]): ChileanLawChunk[] {
-  const filePath = path.join(getLeyesDir(), `${identifier}.md`);
-  if (!fs.existsSync(filePath)) return [];
-
-  const content = fs.readFileSync(filePath, 'utf-8');
-  const articles = extractArticles(content);
+function searchInFile(identifier: string, keywords: string[], targetArticle?: string | null): ChileanLawChunk[] {
+  const articles = getFileArticles(identifier);
   const index = loadIndex();
   const lawMeta = index.find(l => l.identifier === identifier);
   if (!lawMeta) return [];
@@ -142,10 +162,20 @@ function searchInFile(identifier: string, keywords: string[]): ChileanLawChunk[]
   const results: ChileanLawChunk[] = [];
 
   for (const article of articles) {
-    const lowerText = (article.title + ' ' + article.text).toLowerCase();
+    const lowerText = normalize(article.title + ' ' + article.text);
     let relevance = 0;
     for (const kw of keywords) {
       if (lowerText.includes(kw)) relevance++;
+    }
+    if (relevance === 0) continue;
+    // Las leyes de prioridad mapeadas por área ganan el desempate
+    if (PRIORITY_VALUES.has(identifier)) relevance += 5;
+    // Si el título de la ley coincide con keywords, es una ley directamente relevante (ej. "Ley de la Renta")
+    const lawTitleNorm = normalize(lawMeta.title);
+    if (keywords.some(kw => lawTitleNorm.includes(kw))) relevance += 3;
+    // El artículo explícitamente solicitado tiene prioridad total dentro de su ley
+    if (targetArticle && article.number.replace(/\.$/, '').toLowerCase() === targetArticle) {
+      relevance += 1000;
     }
     if (relevance > 0) {
       results.push({
@@ -170,24 +200,28 @@ export interface ChileanSearchResult {
 }
 
 export function searchChileanLawsWithSources(query: string, maxChunks = 8): ChileanSearchResult {
-  const lowerQuery = query.toLowerCase();
-  const keywords = lowerQuery
+  const normQuery = normalize(query);
+  const keywords = normQuery
     .replace(/[¿¡!?.:,;()]/g, ' ')
     .split(/\s+/)
     .filter(w => w.length > 3 && !['como', 'puedo', 'hacer', 'cual', 'cuando', 'donde', 'quien', 'para', 'desde', 'hasta', 'sobre', 'otro', 'esta', 'este', 'todo', 'puede', 'debe', 'tiene', 'hay'].includes(w));
 
   if (keywords.length === 0) return { contextString: '', sources: [] };
 
+  const targetArticle = extractArticleNumber(query);
+
   const searchedIdentifiers = new Set<string>();
   const allResults: ChileanLawChunk[] = [];
 
-  // 1. Search priority laws first
+  // 1. Search priority laws first (con match por prefijo: "hereda" -> "herencia")
   for (const kw of keywords) {
     for (const [pattern, identifier] of Object.entries(PRIORITY_LAWS)) {
-      if (kw.includes(pattern) || pattern.includes(kw)) {
+      const p = normalize(pattern);
+      const matches = kw.startsWith(p) || p.startsWith(kw) || (kw.length >= 4 && p.startsWith(kw.slice(0, 4)));
+      if (matches) {
         if (!searchedIdentifiers.has(identifier)) {
           searchedIdentifiers.add(identifier);
-          allResults.push(...searchInFile(identifier, keywords));
+          allResults.push(...searchInFile(identifier, keywords, targetArticle));
         }
       }
     }
@@ -199,11 +233,11 @@ export function searchChileanLawsWithSources(query: string, maxChunks = 8): Chil
     if (searchedIdentifiers.has(law.identifier)) continue;
     if (allResults.length >= maxChunks * 3) break;
 
-    const titleLower = law.title.toLowerCase();
+    const titleLower = normalize(law.title);
     const hasMatch = keywords.some(kw => titleLower.includes(kw));
     if (hasMatch) {
       searchedIdentifiers.add(law.identifier);
-      allResults.push(...searchInFile(law.identifier, keywords));
+      allResults.push(...searchInFile(law.identifier, keywords, targetArticle));
     }
   }
 
@@ -216,7 +250,7 @@ export function searchChileanLawsWithSources(query: string, maxChunks = 8): Chil
   const sources = topResults.map(chunk => ({
     title: `${chunk.title} — Art. ${chunk.articleNumber}`,
     url: `https://www.leychile.cl/Navegar?idNorma=${chunk.identifier.replace('CL-', '')}`,
-    similarity: chunk.relevance / 10,
+    similarity: Math.min(1, chunk.relevance / 10),
   }));
 
   // Build context string
@@ -294,13 +328,6 @@ export function verifyChileanLaw(query: string): ChileanLawVerification {
     .split(/\s+/)
     .filter(w => w.length > 3 && !['como', 'para', 'desde', 'hasta', 'sobre', 'estado', 'vigente', 'derogada', 'modificada', 'artículo', 'articulo'].includes(w));
 
-  function normalize(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
-
-// Buscar ley por coincidencia de palabras clave en el título
-  // Se favorecen: (1) más keywords, (2) keywords como frase contigua, (3) leyes de prioridad, (4) títulos más cortos.
-  const priorityValues = new Set(Object.values(PRIORITY_LAWS));
   const nKeywords = keywords.map(normalize);
   let law: LawIndexEntry | null = null;
   let bestScore = 0;
@@ -317,7 +344,7 @@ export function verifyChileanLaw(query: string): ChileanLawVerification {
       if (titleLower.includes(nKeywords[i] + ' ' + nKeywords[i + 1])) score += 3;
     }
     // Ley canónica / de prioridad
-    if (priorityValues.has(entry.identifier)) score += 5;
+    if (PRIORITY_VALUES.has(entry.identifier)) score += 5;
     // Título más corto es más canónico que una norma que solo lo menciona
     score += 1 / entry.title.length;
 
@@ -337,27 +364,23 @@ export function verifyChileanLaw(query: string): ChileanLawVerification {
   // Intentar recuperar el texto del artículo desde el archivo de la ley
   let fragmento: string | undefined;
   if (articulo) {
-    const filePath = path.join(getLeyesDir(), `${law.identifier}.md`);
-    if (fs.existsSync(filePath)) {
-      const content = fs.readFileSync(filePath, 'utf-8');
-      const articles = extractArticles(content);
-      const found = articles.find(a => {
-        const clean = a.number.replace(/\.$/, '').toLowerCase();
-        return clean === articulo || clean.replace(/\s/g, '') === articulo;
-      });
-      if (found) fragmento = found.text.substring(0, 1400);
-      else if (articles.length > 0) {
-        return {
-          encontrada: true,
-          verificacion: mapEstado(law.status),
-          estado_raw: law.status || null,
-          norma: law.title,
-          tipo: law.rankLabel,
-          articulo,
-          url,
-          nota: `La norma se identificó pero no se encontró el Art. ${articulo} en el texto disponible del ${law.title}. Verifica el artículo en Ley Chile.`,
-        };
-      }
+    const articles = getFileArticles(law.identifier);
+    const found = articles.find(a => {
+      const clean = normalize(a.number.replace(/\.$/, ''));
+      return clean === articulo || clean.replace(/\s/g, '') === articulo;
+    });
+    if (found) fragmento = found.text.substring(0, 1400);
+    else if (articles.length > 0) {
+      return {
+        encontrada: true,
+        verificacion: mapEstado(law.status),
+        estado_raw: law.status || null,
+        norma: law.title,
+        tipo: law.rankLabel,
+        articulo,
+        url,
+        nota: `La norma se identificó pero no se encontró el Art. ${articulo} en el texto disponible del ${law.title}. Verifica el artículo en Ley Chile.`,
+      };
     }
   }
 

@@ -75,4 +75,35 @@ describe('corpus real chileno (integracion)', () => {
     const r = searchChileanLawsWithSources('pensión de alimentos hijos divorcio', 5);
     expect(r.sources.length).toBeGreaterThan(0);
   });
+
+  it('normaliza tildes: horas extra matchea el Código del Trabajo', () => {
+    const r = searchChileanLawsWithSources('puedo cobrar horas extra', 5);
+    expect(r.sources.length).toBeGreaterThan(0);
+    expect(r.sources[0].title).toContain('TRABAJO');
+  });
+
+  it('sinónimo por prefijo: "hereda" localiza el Código Civil', () => {
+    const r = searchChileanLawsWithSources('hereda mi hijo si muero sin testamento', 5);
+    expect(r.sources.length).toBeGreaterThan(0);
+    expect(r.sources[0].title).toContain('CODIGO CIVIL');
+  });
+
+  it('el artículo pedido explícitamente tiene prioridad máxima', () => {
+    const r = searchChileanLawsWithSources('artículo 162 del código del trabajo', 5);
+    expect(r.sources[0].title).toContain('162');
+    expect(r.sources[0].similarity).toBe(1);
+  });
+
+  it('"impuesto a la renta" localiza la Ley de la Renta (no solo el Código Tributario)', () => {
+    const r = searchChileanLawsWithSources('impuesto a la renta personas naturales', 5);
+    expect(r.sources[0].title).toContain('RENTA');
+    expect(r.sources[0].similarity).toBe(1);
+  });
+
+  it('la relevancia nunca supera 1', () => {
+    const r = searchChileanLawsWithSources('divorcio causal de culpa', 5);
+    for (const s of r.sources) {
+      expect(s.similarity).toBeLessThanOrEqual(1);
+    }
+  });
 });
