@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { FirmRole } from '@/types';
 
 interface FirmInviteFormProps {
-  onInvite: (email: string, role: FirmRole) => Promise<void>;
+  onInvite: (email: string, role: FirmRole) => Promise<{ inviteUrl: string }>;
 }
 
 const VALID_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -14,18 +14,23 @@ export function FirmInviteForm({ onInvite }: FirmInviteFormProps) {
   const [role, setRole] = useState<FirmRole>('associate');
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [inviteUrl, setInviteUrl] = useState<string>('');
+  const [copied, setCopied] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage(null);
+    setInviteUrl('');
+    setCopied(false);
     if (!VALID_EMAIL.test(email.trim())) {
       setMessage({ type: 'error', text: 'Ingresa un correo electrónico válido' });
       return;
     }
     setSending(true);
     try {
-      await onInvite(email.trim(), role);
-      setMessage({ type: 'success', text: `Invitación enviada a ${email.trim()}` });
+      const result = await onInvite(email.trim(), role);
+      setInviteUrl(result.inviteUrl);
+      setMessage({ type: 'success', text: `Invitación generada para ${email.trim()}. Comparte el enlace de aceptación.` });
       setEmail('');
     } catch (err) {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Error al enviar la invitación' });
@@ -76,8 +81,36 @@ export function FirmInviteForm({ onInvite }: FirmInviteFormProps) {
           {sending ? 'Enviando...' : 'Invitar'}
         </button>
       </div>
+
+      {inviteUrl && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded space-y-2">
+          <p className="text-xs text-gray-600">
+            Comparte este enlace con {message?.type === 'success' ? 'el abogado' : 'el invitado'} (vale 7 días, solo con su correo):
+          </p>
+          <div className="flex gap-2">
+            <input
+              readOnly
+              value={inviteUrl}
+              onFocus={(e) => e.target.select()}
+              className="flex-1 px-2 py-1.5 border border-blue-300 rounded text-xs text-gray-700 focus:outline-none bg-white"
+            />
+            <button
+              type="button"
+              onClick={async () => {
+                await navigator.clipboard.writeText(inviteUrl);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+              }}
+              className="px-3 py-1.5 bg-blue-600 text-white text-xs font-medium rounded"
+            >
+              {copied ? '¡Copiado!' : 'Copiar'}
+            </button>
+          </div>
+        </div>
+      )}
+
       <p className="text-xs text-gray-500">
-        El miembro recibirá un enlace de invitación válido por 7 días.
+        El miembro debe iniciar sesión o registrarse con el mismo correo para aceptar la invitación.
       </p>
     </form>
   );

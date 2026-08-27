@@ -447,7 +447,19 @@ export async function createLawFirm(params: {
   return firm as LawFirm;
 }
 
-export async function getMyFirm(user: AuthUser): Promise<{ firm: LawFirm; members: FirmMembership[]; isAdmin: boolean } | null> {
+export async function getMyFirm(user: AuthUser): Promise<{
+  firm: LawFirm;
+  members: FirmMembership[];
+  pendingInvitations: {
+    id: string;
+    invited_email: string;
+    role: FirmRole;
+    token: string;
+    expires_at: string;
+    created_at: string;
+  }[];
+  isAdmin: boolean;
+} | null> {
   if (!isSupabaseConfigured() || !user.firm_id || !user.id) return null;
   const supabase = getSupabase();
 
@@ -469,11 +481,28 @@ export async function getMyFirm(user: AuthUser): Promise<{ firm: LawFirm; member
     .order('joined_at');
   if (memError) throw memError;
 
+  const { data: invitations, error: invError } = await supabase
+    .from('firm_invitations')
+    .select('id, invited_email, role, token, expires_at, created_at')
+    .eq('firm_id', user.firm_id)
+    .eq('accepted', false)
+    .gte('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false });
+  if (invError) throw invError;
+
   return {
     firm: firm as LawFirm,
     members: (members || []).map(m => ({
       ...m,
       user: Array.isArray(m.users) ? m.users[0] : m.users,
+    })),
+    pendingInvitations: (invitations || []).map(i => ({
+      id: i.id,
+      invited_email: i.invited_email,
+      role: i.role as FirmRole,
+      token: i.token,
+      expires_at: i.expires_at,
+      created_at: i.created_at,
     })),
     isAdmin: user.role_in_firm === 'admin',
   };
@@ -674,9 +703,21 @@ export async function getMyInvitations(email: string) {
   }));
 }
 
-export async function acceptInvitation(token: string, userId: string) {
+export async function acceptInvitation(token: string, userId: string, userEmail?: string) {
   if (!isSupabaseConfigured()) throw new Error('Requiere cuenta en la nube');
   const supabase = getSupabase();
+
+  // Obtener el correo del usuario actual si no se pasa
+  let email = userEmail;
+  if (!email) {
+    const { data: profile } = await supabase
+      .from('users')
+      .select('email')
+      .eq('id', userId)
+      .single();
+    email = profile?.email;
+  }
+  if (!email) throw new Error('No se pudo verificar tu correo. Vuelve a iniciar sesión.');
 
   const { data: invitation, error: invError } = await supabase
     .from('firm_invitations')
@@ -686,8 +727,25 @@ export async function acceptInvitation(token: string, userId: string) {
     .single();
   if (invError) throw new Error('Invitación no válida o ya fue utilizada');
 
+  // La invitación está vinculada a un correo específico
+  if (invitation.invited_email.toLowerCase() !== email.toLowerCase()) {
+    throw new Error('Esta invitación fue enviada a otro correo. Usa el correo con el que se te invitó.');
+  }
+
   if (new Date(invitation.expires_at) < new Date()) {
     throw new Error('Esta invitación ha expirado');
+  }
+
+  // Ya es miembro activo de este estudio
+  const { data: existing } = await supabase
+    .from('firm_memberships')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('firm_id', invitation.firm_id)
+    .eq('is_active', true)
+    .maybeSingle();
+  if (existing) {
+    throw new Error('Ya eres miembro activo de este estudio');
   }
 
   // Marcar invitación como aceptada
@@ -696,17 +754,17 @@ export async function acceptInvitation(token: string, userId: string) {
     .update({ accepted: true })
     .eq('id', invitation.id);
 
-  // Crear membresía
+  // Crear membresía (upsert por si fue miembro antes: reactiva la membresía)
   const { error: memError } = await supabase
     .from('firm_memberships')
-    .insert({
+    .upsert({
       user_id: userId,
       firm_id: invitation.firm_id,
       role: invitation.role,
       invited_by: invitation.invited_by,
       joined_at: new Date().toISOString(),
       is_active: true,
-    });
+    }, { onConflict: 'user_id,firm_id' });
   if (memError) throw memError;
 
   // Actualizar plan del usuario al plan del estudio
@@ -722,6 +780,7 @@ export async function acceptInvitation(token: string, userId: string) {
       plan: firm?.plan || 'professional',
       queries_used: 0,
       queries_limit: firm?.queries_limit || 500,
+      firm_id: invitation.firm_id,
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId);

@@ -19,7 +19,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       );
     }
 
-    const result = await acceptInvitation(token, user.id);
+    const result = await acceptInvitation(token, user.id, user.email);
     return Response.json({ ...result, message: '¡Bienvenido al estudio jurídico!' });
   } catch (error) {
     console.error('Accept invitation error:', error);

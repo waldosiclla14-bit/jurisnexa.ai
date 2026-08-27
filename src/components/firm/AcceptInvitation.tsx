@@ -5,7 +5,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { useRouter } from 'next/navigation';
 
 export function AcceptInvitation({ token }: { token: string }) {
-  const { user, loading } = useAuth();
+  const { user, loading, refreshUser } = useAuth();
   const router = useRouter();
   const [accepting, setAccepting] = useState(false);
   const [result, setResult] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -18,6 +18,7 @@ export function AcceptInvitation({ token }: { token: string }) {
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       setResult({ type: 'success', text: '¡Bienvenido al estudio jurídico! Serás redirigido a tu panel.' });
+      await refreshUser();
       setTimeout(() => {
         router.push('/estudio');
         router.refresh();

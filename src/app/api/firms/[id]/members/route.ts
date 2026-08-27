@@ -60,8 +60,14 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       role,
     });
 
+    const inviteUrl = `${request.nextUrl.origin}/invitacion/${invitation.token}`;
+
     return Response.json(
-      { invitation, message: `Invitación enviada a ${email}. El enlace caduca en 7 días.` },
+      {
+        invitation,
+        inviteUrl,
+        message: `Invitación generada para ${email}. Comparte el enlace de aceptación (caduca en 7 días).`,
+      },
       { status: 201 }
     );
   } catch (error) {

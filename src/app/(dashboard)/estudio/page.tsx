@@ -8,14 +8,24 @@ import { FirmMemberList } from '@/components/firm/FirmMemberList';
 import { FirmInviteForm } from '@/components/firm/FirmInviteForm';
 import { LawFirm, FirmMembership, FirmRole, FirmInvitation } from '@/types';
 
+interface PendingInvitation {
+  id: string;
+  invited_email: string;
+  role: FirmRole;
+  token: string;
+  expires_at: string;
+  created_at: string;
+}
+
 interface FirmData {
   firm: LawFirm;
   members: FirmMembership[];
+  pendingInvitations: PendingInvitation[];
   isAdmin: boolean;
 }
 
 export default function EstudioPage() {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [firmData, setFirmData] = useState<FirmData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -54,6 +64,7 @@ export default function EstudioPage() {
     if (data.error) throw new Error(data.error);
     setInvitations((prev) => prev.filter((inv) => inv.token !== token));
     await loadFirm();
+    await refreshUser();
   };
 
   const handleCreate = async (data: {
@@ -73,6 +84,7 @@ export default function EstudioPage() {
     const result = await res.json();
     if (result.error) throw new Error(result.error);
     await loadFirm();
+    await refreshUser();
   };
 
   const handleUpdate = async (data: {
@@ -96,7 +108,7 @@ export default function EstudioPage() {
   };
 
   const handleInvite = async (email: string, role: FirmRole) => {
-    if (!firmData) return;
+    if (!firmData) throw new Error('No hay un estudio activo');
     const res = await fetch(`/api/firms/${firmData.firm.id}/members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -104,6 +116,8 @@ export default function EstudioPage() {
     });
     const result = await res.json();
     if (result.error) throw new Error(result.error);
+    await loadFirm();
+    return { inviteUrl: result.inviteUrl as string };
   };
 
   const handleRemove = async (memberId: string) => {
@@ -162,7 +176,7 @@ export default function EstudioPage() {
 
       {invitations.length > 0 && (
         <div className="space-y-3">
-          <h2 className="text-lg font-semibold text-white">Invitaciones pendientes</h2>
+          <h2 className="text-lg font-semibold text-white">Invitaciones para ti</h2>
           {invitations.map((inv) => (
             <div
               key={inv.id}
@@ -181,7 +195,7 @@ export default function EstudioPage() {
                 <button
                   onClick={() =>
                     handleAcceptInvitation(inv.token).catch((err) =>
-                      setError(err?.message || 'Error al aceptar invitación')
+                      setError(err instanceof Error ? err.message : 'Error al aceptar invitación')
                     )
                   }
                   className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium rounded-lg"
@@ -216,6 +230,50 @@ export default function EstudioPage() {
 
           {firmData.isAdmin && (
             <FirmInviteForm onInvite={handleInvite} />
+          )}
+
+          {firmData.isAdmin && firmData.pendingInvitations.length > 0 && (
+            <div className="space-y-3">
+              <h2 className="text-lg font-semibold text-white">
+                Enlaces de invitación pendientes ({firmData.pendingInvitations.length})
+              </h2>
+              <p className="text-xs text-zinc-500">
+                Copia cada enlace y envíalo al abogado. Caducan en 7 días y solo funcionan con el correo indicado.
+              </p>
+              {firmData.pendingInvitations.map((inv) => (
+                <div
+                  key={inv.id}
+                  className="p-4 bg-zinc-900 border border-zinc-800 rounded-xl space-y-2"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm text-white font-medium">{inv.invited_email}</p>
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      inv.role === 'admin' ? 'bg-purple-900/50 text-purple-300' :
+                      inv.role === 'partner' ? 'bg-amber-900/50 text-amber-300' :
+                      'bg-blue-900/50 text-blue-300'
+                    }`}>
+                      {inv.role}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      readOnly
+                      value={`${window.location.origin}/invitacion/${inv.token}`}
+                      onFocus={(e) => e.target.select()}
+                      className="flex-1 px-3 py-2 bg-zinc-800 border border-zinc-700 rounded text-xs text-zinc-400 focus:outline-none"
+                    />
+                    <button
+                      onClick={() =>
+                        navigator.clipboard.writeText(`${window.location.origin}/invitacion/${inv.token}`)
+                      }
+                      className="px-3 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium rounded-lg"
+                    >
+                      Copiar
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
 
           <div>
