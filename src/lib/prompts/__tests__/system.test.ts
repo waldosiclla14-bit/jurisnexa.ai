@@ -51,3 +51,24 @@ describe('getSystemPromptWithRAG', () => {
     expect(prompt).toContain('No hay documentos jurídicos disponibles');
   });
 });
+
+describe('getSystemPromptWithRAG - modo cliente', () => {
+  it('usa lenguaje sencillo y estructura de orientación ciudadana', () => {
+    const prompt = getSystemPromptWithRAG('PERU', undefined, '', 'cliente');
+    expect(prompt).toContain('UN CLIENTE');
+    expect(prompt).toContain('### Qué entendí');
+    expect(prompt).toContain('### Tus derechos en resumen');
+    expect(prompt).toContain('### Qué puedes hacer');
+  });
+
+  it('no muestra los epígrafes profesionales del modo abogado', () => {
+    const prompt = getSystemPromptWithRAG('PERU', undefined, '', 'cliente');
+    expect(prompt).not.toContain('### Análisis jurídico');
+    expect(prompt).not.toContain('Cita siempre las fuentes');
+  });
+
+  it('advierte que no sustituye a un abogado', () => {
+    const prompt = getSystemPromptWithRAG('PERU', undefined, '', 'cliente');
+    expect(prompt).toContain('NO sustituye la opinión de un abogado');
+  });
+});

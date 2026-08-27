@@ -14,11 +14,11 @@ export async function POST(request: NextRequest) {
 
     switch (action) {
       case 'signup': {
-        const { email, password, fullName } = body;
+        const { email, password, fullName, tipoUsuario } = body;
         if (!email || !password) {
           return Response.json({ error: 'Email y contraseña son requeridos' }, { status: 400 });
         }
-        const data = await signUp(email, password, fullName);
+        const data = await signUp(email, password, fullName, tipoUsuario);
         return Response.json({ user: data.user, session: data.session });
       }
 

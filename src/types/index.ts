@@ -1,5 +1,12 @@
 export type Country = 'PERU' | 'CHILE' | 'BOTH';
 
+export type UserType = 'cliente' | 'abogado';
+
+export const USER_TYPE_LABELS: Record<UserType, string> = {
+  cliente: 'Cliente',
+  abogado: 'Abogado',
+};
+
 export type LegalArea =
   | 'civil'
   | 'penal'
@@ -104,6 +111,7 @@ export interface ChatRequest {
   message: string;
   country: Country;
   legalArea?: LegalArea;
+  tipoUsuario?: UserType;
   conversationId?: string;
   documentId?: string;
   fileData?: {

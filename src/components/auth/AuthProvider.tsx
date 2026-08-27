@@ -2,6 +2,7 @@
 
 import { useState, createContext, useContext, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { UserType } from '@/types';
 
 interface User {
   id: string;
@@ -10,6 +11,7 @@ interface User {
   plan: string;
   queries_used: number;
   queries_limit: number;
+  tipo_usuario?: UserType;
   colegiatura?: string;
   legal_areas?: string[];
   credential_issued_at?: string | null;
@@ -24,7 +26,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName?: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName?: string, tipoUsuario?: UserType) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -66,11 +68,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/chat');
   };
 
-  const signUp = async (email: string, password: string, fullName?: string) => {
+  const signUp = async (email: string, password: string, fullName?: string, tipoUsuario?: UserType) => {
     const res = await fetch('/api/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'signup', email, password, fullName }),
+      body: JSON.stringify({ action: 'signup', email, password, fullName, tipoUsuario }),
     });
     const data = await res.json();
     if (data.error) throw new Error(data.error);

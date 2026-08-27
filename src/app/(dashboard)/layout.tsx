@@ -17,6 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Link href="/borradores" className="text-zinc-400 hover:text-white transition-colors">Borradores</Link>
               <Link href="/estudio" className="text-zinc-400 hover:text-white transition-colors">Estudio</Link>
               <Link href="/citas" className="text-zinc-400 hover:text-white transition-colors">Citas</Link>
+              <Link href="/plazos" className="text-zinc-400 hover:text-white transition-colors">Plazos</Link>
               <Link href="/leyes-chile" className="text-zinc-400 hover:text-white transition-colors">Leyes CL</Link>
               <Link href="/documentos" className="text-zinc-400 hover:text-white transition-colors">Documentos</Link>
               <Link href="/perfil" className="text-zinc-400 hover:text-white transition-colors">Perfil</Link>

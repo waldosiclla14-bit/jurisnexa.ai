@@ -6,11 +6,25 @@ import { isSupabaseConfigured, getSupabase } from '@/lib/db/supabase';
 import { searchChileanLaws, searchChileanLawsWithSources } from '@/lib/rag/chilean-law-search';
 import { chatLimiter, rateLimitResponse } from '@/lib/rate-limit';
 import { createConversation, insertMessage, updateConversation } from '@/lib/db/queries';
-import { ChatRequest, Country, LegalArea } from '@/types';
+import { ChatRequest, Country, LegalArea, UserType } from '@/types';
+import { getCurrentUser } from '@/lib/auth';
 
-// Check if user has lawyer plan (restricted DB access)
-function isLawyerPlan(userPlan: string | undefined): boolean {
-  return userPlan === 'abogado';
+async function resolveTipoUsuario(
+  request: NextRequest,
+  bodyTipo?: UserType
+): Promise<UserType> {
+  if (isSupabaseConfigured()) {
+    try {
+      const currentUser = await getCurrentUser(request.headers.get('cookie'));
+      if (currentUser?.tipo_usuario === 'abogado' || currentUser?.tipo_usuario === 'cliente') {
+        return currentUser.tipo_usuario;
+      }
+    } catch {
+      // Sin sesión válida o error: usar fallback
+    }
+    return 'cliente';
+  }
+  return bodyTipo === 'abogado' ? 'abogado' : 'cliente';
 }
 
 export async function POST(request: NextRequest) {
@@ -40,6 +54,7 @@ export async function POST(request: NextRequest) {
 
     const country: Country = body.country || 'PERU';
     const legalArea: LegalArea | undefined = body.legalArea;
+    const tipoUsuario = await resolveTipoUsuario(request, body.tipoUsuario);
 
     // RAG: search for relevant legal context if DB is configured
     let ragContext = '';
@@ -126,7 +141,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const systemPrompt = getSystemPromptWithRAG(country, legalArea, ragContext + documentContext);
+    const systemPrompt = getSystemPromptWithRAG(country, legalArea, ragContext + documentContext, tipoUsuario);
     const provider = createLLMProvider();
     const providerInfo = getProviderInfo();
 

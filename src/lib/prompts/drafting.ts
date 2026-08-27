@@ -175,10 +175,140 @@ SECCIONES DEL DOCUMENTO:
     : '';
 
   const specificInstructions = getSpecificInstructions(docType, country);
+  const checklistSection = getChecklistSection(docType, country);
 
   return `${baseInstructions}
 ${specificInstructions}
+${checklistSection}
 ${ragSection}`;
+}
+
+export interface ChecklistItem {
+  item: string;
+  detalle?: string;
+}
+
+export const ESCRITO_CHECKLISTS: Record<string, ChecklistItem[]> = {
+  'demanda-civil': [
+    { item: 'Expediente y juzgado correctos en el encabezado', detalle: 'Competencia por cuantía y territorio' },
+    { item: 'Datos completos de demandante y demandado', detalle: 'Nombre, identificación, domicilio' },
+    { item: 'Vía procedimental correcta', detalle: 'Conocimiento / Abreviado (PE) u Ordinario / Sumario (CL)' },
+    { item: 'Indeterminados del petitorio', detalle: 'Cuantía del petitorio precisada' },
+    { item: 'Anexos obligatorios', detalle: 'Poder, identidad, minuta si corresponde, medios probatorios' },
+    { item: 'Firma del abogado patrocinante', detalle: 'Nombre, registro, correo' },
+  ],
+  'demanda-laboral': [
+    { item: 'Tipo de proceso correcto', detalle: 'Ordinario o abreviado según monto (PE) / Juzgado de Letras del Trabajo (CL)' },
+    { item: 'Pretensiones cuantificadas', detalle: 'Cálculo de CTS, vacaciones, gratificaciones, indemnización con base legal' },
+    { item: 'Prescripción verificada', detalle: '3 años despido nulo / 2 años incausado (PE); 2 años (CL)' },
+    { item: 'Medios probatorios ofrecidos', detalle: 'Contrato, boletas, liquidaciones, finiquito' },
+  ],
+  'demanda-penal-querella': [
+    { item: 'Tipo de acción correcta', detalle: 'Querella (PE Art. 257 NCPP) / Querella (CL Art. 110-116 CPP)' },
+    { item: 'Prescripción de la acción dentro del plazo', detalle: 'PE 3 meses desde conocimiento del delito' },
+    { item: 'Hechos que constituyen delito claramente tipificados', detalle: 'Cita exacta del tipo penal' },
+    { item: 'Petición de diligencias', detalle: 'Actuaciones solicitadas al juzgado' },
+  ],
+  'contestacion-demanda': [
+    { item: 'Cada hecho de la demanda absuelto', detalle: 'Afirmado, negado o desconocido con precisión' },
+    { item: 'Excepciones previas propuestas', detalle: 'Incompetencia, cosa juzgada, prescripción (PE Art. 446-457; CL Art. 464)' },
+    { item: 'Medios probatorios ofrecidos', detalle: 'Solo los atinentes a los puntos controvertidos' },
+    { item: 'Dentro del plazo legal', detalle: 'PE 30 días (Art. 478); CL 15 días (Art. 318)' },
+  ],
+  'recurso-apelacion': [
+    { item: 'Resolución impugnada claramente identificada', detalle: 'Fecha y número de resolución' },
+    { item: 'Dentro del plazo legal', detalle: 'PE 5 días hábiles (Art. 365); CL 5 días (Art. 202)' },
+    { item: 'Agravio expresado', detalle: 'Qué perjuicio concreto produce la resolución' },
+    { item: 'Fundamentos de hecho y de derecho', detalle: 'Sustento de la impugnación' },
+  ],
+  'recurso-nulidad': [
+    { item: 'Causal invocada correcta', detalle: 'Infracción normativa o errónea aplicación de norma sustantiva' },
+    { item: 'Dentro del plazo legal', detalle: 'PE 10 días hábiles (Art. 387 CPC)' },
+    { item: 'Pretensión impugnatoria clara', detalle: 'Qué se pide a la Corte Suprema' },
+    { item: 'Sustento en el acta o la sentencia', detalle: 'Referencia al agravio concreto' },
+  ],
+  'demanda-familiar': [
+    { item: 'Materia y proceso correctos', detalle: 'CNA/D.L. 1049 (PE) / Ley 19.968 (CL)' },
+    { item: 'Interés superior del menor considerado', detalle: 'Argumentación específica' },
+    { item: 'Medios probatorios ofrecidos', detalle: 'Partidas, informes, evaluaciones' },
+    { item: 'Ingresos y gastos documentados', detalle: 'Para alimentos y pensiones' },
+  ],
+  'contrato-locacion': [
+    { item: 'Objeto claramente individualizado', detalle: 'Ubicación y características del inmueble' },
+    { item: 'Precio y forma de pago', detalle: 'Monto, moneda, fecha y medio de pago' },
+    { item: 'Duración y causal de término', detalle: 'Plazo y condiciones de terminación' },
+    { item: 'Garantía ajustada a ley', detalle: 'PE máx. 2 meses (Art. 1667); CL máx. 1 mes (Art. 1953)' },
+    { item: 'Seguro y obligaciones de mantención', detalle: 'Quién los cubre y cómo' },
+  ],
+  'contrato-trabajo': [
+    { item: 'Tipo de contrato correcto', detalle: 'Plazo determinado / indeterminado' },
+    { item: 'Remuneración claramente estipulada', detalle: 'Sueldo base, asignaciones, comisiones' },
+    { item: 'Jornada y descansos', detalle: 'Horario, refrigerio, descanso semanal' },
+    { item: 'Funciones del trabajador', detalle: 'Cargo y obligaciones específicas' },
+    { item: 'Duración dentro del máximo', detalle: 'PE máx. 5 años (Art. 77 TUO); CL máx. 2 años plazo fijo' },
+  ],
+  'carta-reclamo': [
+    { item: 'Reclamante y proveedor identificados', detalle: 'Datos y dirección de notificación' },
+    { item: 'Hechos describen el defecto', detalle: 'Qué ocurrió, cuándo, cuánto' },
+    { item: 'Petición concreta', detalle: 'Reposición, reparación, devolución, indemnización' },
+    { item: 'Plazo de reclamo vigente', detalle: 'PE 12 meses (Ley 29571); CL 4 meses SERNAC (Ley 19.496)' },
+  ],
+  'informe-juridico': [
+    { item: 'Problema jurídico definido', detalle: 'Pregunta concreta que responde el informe' },
+    { item: 'Análisis con norma vigente citada', detalle: 'Verificar estado de vigencia de cada norma' },
+    { item: 'Conclusiones y recomendaciones', detalle: 'Toda conclusión respaldada' },
+    { item: 'Alcance y advertencias', detalle: 'Limitar el ámbito del informe' },
+  ],
+  'consultoria-legal': [
+    { item: 'Situación fáctica clara', detalle: 'Antecedentes y contexto' },
+    { item: 'Normativa aplicable verificada', detalle: 'Vigencia y aplicación al caso' },
+    { item: 'Alternativas y riesgos', detalle: 'Opciones con consecuencias' },
+    { item: 'Disclaimer', detalle: 'No constituye asesoría legal directa' },
+  ],
+  'demanda-ojv': [
+    { item: 'Encabezado con tribunal correcto', detalle: 'S.J.L. de [materia] de [comuna]' },
+    { item: 'RUT del demandante/demandado correctos', detalle: 'Anonimizados (XX.XXX.XXX-X)' },
+    { item: 'Materia de la acción identificada', detalle: 'Laboral, civil, familia, penal' },
+    { item: 'Normas citadas con Art. exacto + URL BCN', detalle: 'Código + Ley Chile de cada fundamento' },
+    { item: 'Plazo fatal verificado', detalle: 'Ej. 60 días despido (Art. 168 CT)' },
+    { item: 'PDF/A con firma electrónica avanzada', detalle: 'Ingreso OJV con Clave Única' },
+  ],
+};
+
+const CHECKLIST_GENERICOS: Record<string, string[]> = {
+  PERU: [
+    'Expediente, juzgado y vía procedimental correctos',
+    'Firma del abogado con registro de colegiatura',
+    'Anexos: poder, DNI, medios probatorios en carpeta fiscal/judicial',
+    'Derechos de notificación electrónica (casilla) al día',
+    'Copias según cantidad de demandados',
+  ],
+  CHILE: [
+    'Tribunal y materia correctos (RIT si se conoce)',
+    'Firma del abogado patrocinante con registro PCAS',
+    'Clave Única y certificado para ingreso OJV',
+    'Documentos en PDF/A (no escaneados ilegibles)',
+    'Copias digitales y tasas judiciales pagadas',
+  ],
+};
+
+function getChecklistSection(docType: DocumentType, country: Country): string {
+  const items = ESCRITO_CHECKLISTS[docType] || [];
+  const genericos = CHECKLIST_GENERICOS[country === 'PERU' ? 'PERU' : 'CHILE'] || [];
+  if (items.length === 0) return '';
+
+  const list = [
+    ...items.map(i => `- [ ] ${i.item}${i.detalle ? ` — ${i.detalle}` : ''}`),
+    ...genericos.map(i => `- [ ] ${i}`),
+  ].join('\n');
+
+  return `
+CHECKLIST DE REQUISITOS FORMALES:
+Antes de que la sección "FUENTES CONSULTADAS" y de que la ADVERTENCIA final, agrega en una sección titulada "### CHECKLIST DE REQUISITOS FORMALES" el siguiente listado con casillas sin marcar, exactamente como aquí:
+
+${list}
+
+No elimines ni marques casillas: es una lista de cotejo para que el abogado verifique cada requisito antes de presentar.`;
 }
 
 function getSpecificInstructions(docType: DocumentType, country: Country): string {

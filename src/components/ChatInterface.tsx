@@ -7,7 +7,10 @@ import LegalAreaSelector from './LegalAreaSelector';
 import SuggestedQuestions from './SuggestedQuestions';
 import DocumentDrafting from './DocumentDrafting';
 import CaseIntake from './CaseIntake';
+import NormValidator from './NormValidator';
+import SentenciaAnalyzer from './SentenciaAnalyzer';
 import { DocumentType } from '@/lib/prompts/drafting';
+import { useAuth } from './auth/AuthProvider';
 
 interface ChatInterfaceProps {
   country: Country;
@@ -31,10 +34,13 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
   const [showAreaSelector, setShowAreaSelector] = useState(false);
   const [showDocumentDrafting, setShowDocumentDrafting] = useState(false);
   const [showCaseIntake, setShowCaseIntake] = useState(false);
+  const [showNormValidator, setShowNormValidator] = useState(false);
+  const [showSentenciaAnalyzer, setShowSentenciaAnalyzer] = useState(false);
   const [conversationId, setConversationId] = useState<string | undefined>(initialConversationId);
   const [loadingConversation, setLoadingConversation] = useState(!!initialConversationId);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { user } = useAuth();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -123,6 +129,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
           message: `Analiza este documento jurídico adjunto: ${file.name}. Extrae los datos relevantes, partes involucradas, pretensiones, fundamentos de derecho y cualquier resolución o decisión contenida en el documento.`,
           country,
           legalArea,
+          tipoUsuario: user?.tipo_usuario || 'cliente',
           history: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
           conversationId,
           fileData: {
@@ -243,6 +250,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
           message: text.trim(),
           country,
           legalArea,
+          tipoUsuario: user?.tipo_usuario || 'cliente',
           history,
           conversationId,
           documentId,
@@ -331,7 +339,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
     } finally {
       setIsLoading(false);
     }
-  }, [country, legalArea, isLoading, messages, conversationId]);
+  }, [country, legalArea, isLoading, messages, conversationId, user]);
 
   const sendMessage = useCallback(async (text: string) => {
     return sendMessageWithDocument(text);
@@ -350,17 +358,6 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
   };
 
   const isEmpty = messages.length === 0 && !loadingConversation;
-
-  if (loadingConversation) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-zinc-500">Cargando conversación...</p>
-        </div>
-      </div>
-    );
-  }
 
   const handleDraftGenerated = useCallback((content: string, docType: DocumentType) => {
     const docTypeLabel = docType.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -465,6 +462,92 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
     }
   }, [country]);
 
+  const handleSentenciaAnalyze = useCallback(async (texto: string) => {
+    setShowSentenciaAnalyzer(false);
+    setIsLoading(true);
+
+    const userMessage: Message = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: '📑 Analizar sentencia / resolución',
+      timestamp: new Date(),
+      country,
+      legalArea,
+    };
+    setMessages(prev => [...prev, userMessage]);
+
+    const assistantMessageId = crypto.randomUUID();
+    const assistantMessage: Message = {
+      id: assistantMessageId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      country,
+      legalArea,
+      metadata: { documentType: 'analisis-sentencia' },
+    };
+    setMessages(prev => [...prev, assistantMessage]);
+
+    try {
+      const response = await fetch('/api/analizar-sentencia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto, country, legalArea }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Error de conexión' }));
+        throw new Error(errorData.error || `Error HTTP ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No se pudo leer la respuesta');
+
+      const decoder = new TextDecoder();
+      let fullContent = '';
+      let streamSources: { title: string; url: string | null; similarity: number }[] = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('__META__')) continue;
+          if (line.startsWith('__SOURCES__')) {
+            try { streamSources = JSON.parse(line.slice(11)).sources || []; } catch { /* ignore */ }
+            continue;
+          }
+          if (line.startsWith('__ERROR__')) throw new Error(line.slice(9));
+          if (line.trim()) fullContent += line;
+        }
+        setMessages(prev =>
+          prev.map(m => m.id === assistantMessageId ? { ...m, content: fullContent, ...(streamSources.length > 0 ? { metadata: { ...m.metadata, sources: streamSources } } : {}) } : m)
+        );
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      setMessages(prev =>
+        prev.map(m => m.id === assistantMessageId
+          ? { ...m, content: `Error al analizar la sentencia: ${errorMessage}` }
+          : m)
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, [country, legalArea]);
+
+  if (loadingConversation) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-zinc-500">Cargando conversación...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-1 flex-col">
       {/* Document Drafting Modal */}
@@ -481,6 +564,22 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
         <CaseIntake
           onComplete={handleCaseIntakeComplete}
           onClose={() => setShowCaseIntake(false)}
+        />
+      )}
+      {/* Norm Validator Modal */}
+      {showNormValidator && (
+        <NormValidator
+          country={country}
+          onClose={() => setShowNormValidator(false)}
+        />
+      )}
+      {/* Sentencia Analyzer Modal */}
+      {showSentenciaAnalyzer && (
+        <SentenciaAnalyzer
+          country={country}
+          legalArea={legalArea}
+          onAnalyze={handleSentenciaAnalyze}
+          onClose={() => setShowSentenciaAnalyzer(false)}
         />
       )}
       {/* Messages area */}
@@ -556,6 +655,29 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
                   }
                   label="Redactar documento"
                   onClick={() => setShowDocumentDrafting(true)}
+                />
+                <ActionButton
+                  icon={
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 2v20" />
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                    </svg>
+                  }
+                  label="Verificar norma"
+                  onClick={() => setShowNormValidator(true)}
+                />
+                <ActionButton
+                  icon={
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                      <line x1="16" y1="13" x2="8" y2="13" />
+                      <line x1="16" y1="17" x2="8" y2="17" />
+                      <polyline points="10 9 9 9 8 9" />
+                    </svg>
+                  }
+                  label="Analizar sentencia"
+                  onClick={() => setShowSentenciaAnalyzer(true)}
                 />
                 {country === 'CHILE' && (
                   <ActionButton
@@ -664,6 +786,28 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
                     <line x1="16" y1="17" x2="8" y2="17" />
                   </svg>
                   Redactar
+                </button>
+                <button
+                  onClick={() => setShowNormValidator(true)}
+                  className="whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium bg-violet-500/10 text-violet-400 ring-1 ring-violet-500/30 hover:bg-violet-500/20 transition-all flex items-center gap-1"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2v20" />
+                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                  </svg>
+                  Verificar norma
+                </button>
+                <button
+                  onClick={() => setShowSentenciaAnalyzer(true)}
+                  className="whitespace-nowrap rounded-full px-3 py-1 text-[11px] font-medium bg-blue-500/10 text-blue-400 ring-1 ring-blue-500/30 hover:bg-blue-500/20 transition-all flex items-center gap-1"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                  </svg>
+                  Sentencia
                 </button>
               </div>
             </div>

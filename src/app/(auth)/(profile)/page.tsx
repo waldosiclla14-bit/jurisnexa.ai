@@ -2,7 +2,7 @@ import { LawyerProfileForm } from '@/components/lawyer/LawyerProfileForm';
 import { LawyerCredential } from '@/components/lawyer/LawyerCredential';
 import { useState, useEffect } from 'react';
 import { updateUserProfile, getCurrentUser } from '@/lib/auth';
-import { LegalArea } from '@/types';
+import { LegalArea, UserType } from '@/types';
 
 export default function LawyerProfilePage() {
 const [user, setUser] = useState<{
@@ -11,6 +11,7 @@ const [user, setUser] = useState<{
     colegiatura: string;
     legal_areas: LegalArea[];
     plan: string;
+    tipo_usuario: UserType;
     credential_issued_at: string | null;
     credential_expires_at: string | null;
   }>({
@@ -19,22 +20,23 @@ const [user, setUser] = useState<{
     colegiatura: '',
     legal_areas: [],
     plan: 'free',
+    tipo_usuario: 'cliente',
     credential_issued_at: null,
     credential_expires_at: null,
   });
   const [loading, setLoading] = useState(true);
-  const [showCredential, setShowCredential] = useState(false);
 
   useEffect(() => {
     ;(async () => {
       const currentUser = await getCurrentUser();
-      if (currentUser && currentUser.plan === 'abogado') {
+      if (currentUser && (currentUser.tipo_usuario === 'abogado' || currentUser.plan === 'abogado')) {
         setUser({
           id: currentUser.id,
           full_name: currentUser.full_name || 'Abogado',
           colegiatura: currentUser.colegiatura || '',
           legal_areas: currentUser.legal_areas || [],
           plan: currentUser.plan,
+          tipo_usuario: currentUser.tipo_usuario || 'abogado',
           credential_issued_at: currentUser.credential_issued_at || null,
           credential_expires_at: currentUser.credential_expires_at || null,
         });
@@ -49,7 +51,7 @@ const [user, setUser] = useState<{
   }) => {
     await updateUserProfile(user.id, {
       colegiatura: data.colegiatura,
-      legal_areas: data.legal_areas as any,
+      legal_areas: data.legal_areas as LegalArea[],
       credential_issued_at: new Date().toISOString(),
       credential_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
     });
@@ -62,11 +64,11 @@ const [user, setUser] = useState<{
         colegiatura: updatedUser.colegiatura || '',
         legal_areas: updatedUser.legal_areas || [],
         plan: updatedUser.plan,
+        tipo_usuario: updatedUser.tipo_usuario || 'abogado',
         credential_issued_at: updatedUser.credential_issued_at || null,
         credential_expires_at: updatedUser.credential_expires_at || null,
       });
     }
-    setShowCredential(true);
   };
 
   if (loading) {
@@ -79,7 +81,7 @@ const [user, setUser] = useState<{
         <h1 className="text-2xl font-bold text-amber-600">
           Mi Perfil de Abogado
         </h1>
-        {user.plan === 'abogado' && (
+        {user.tipo_usuario === 'abogado' && (
           <LawyerCredential
             user={{
               full_name: user.full_name,
@@ -93,7 +95,7 @@ const [user, setUser] = useState<{
         )}
       </header>
 
-      {user.plan === 'abogado' ? (
+      {user.tipo_usuario === 'abogado' ? (
         <LawyerProfileForm
           user={user}
           onSave={handleSave}

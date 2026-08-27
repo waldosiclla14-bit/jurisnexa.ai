@@ -12,7 +12,7 @@ interface LawyerCredentialProps {
 }
 
 export function LawyerCredential({ user }: LawyerCredentialProps) {
-  const isValid = user.plan === 'abogado';
+  const isValid = true;
   const issued = user.credential_issued_at
     ? new Date(user.credential_issued_at)
     : new Date();
@@ -60,7 +60,7 @@ export function LawyerCredential({ user }: LawyerCredentialProps) {
 
       {isValid && (
         <p className="mt-4 text-sm text-green-600">
-          ✅ Credencial Válida - Plan Abogado Activo
+          ✅ Credencial Válida
         </p>
       )}
     </div>

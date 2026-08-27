@@ -1,5 +1,5 @@
 import { getSupabase, isSupabaseConfigured } from '../db/supabase';
-import { LegalArea, FirmRole, LawFirm, FirmMembership } from '@/types';
+import { LegalArea, FirmRole, LawFirm, FirmMembership, UserType } from '@/types';
 import { createHash, randomBytes, timingSafeEqual } from 'crypto';
 
 export interface AuthUser {
@@ -9,7 +9,10 @@ export interface AuthUser {
   plan: string;
   queries_used: number;
   queries_limit: number;
-  
+
+  // Tipo de usuario: orienta cómo responde la IA
+  tipo_usuario?: UserType;
+
   // Credenciales abogado
   colegiatura?: string;              // N° de registro/colegiatura profesional
   legal_areas?: LegalArea[];         // Especialidades jurídicas seleccionadas
@@ -128,7 +131,7 @@ export async function attachFirmInfo(user: AuthUser): Promise<AuthUser> {
   };
 }
 
-export async function signUp(email: string, password: string, fullName?: string) {
+export async function signUp(email: string, password: string, fullName?: string, tipoUsuario?: UserType) {
   if (isSupabaseConfigured()) {
     const supabase = getSupabase();
     const { data, error } = await supabase.auth.signUp({
@@ -147,6 +150,7 @@ export async function signUp(email: string, password: string, fullName?: string)
           plan: 'free',
           queries_used: 0,
           queries_limit: 10,
+          tipo_usuario: tipoUsuario || 'cliente',
           colegiatura: '',
           legal_areas: [],
           credential_issued_at: null,
@@ -162,6 +166,7 @@ export async function signUp(email: string, password: string, fullName?: string)
         plan: 'free',
         queries_used: 0,
         queries_limit: 10,
+        tipo_usuario: tipoUsuario || 'cliente',
         colegiatura: '',
         legal_areas: [],
         credential_issued_at: null,
@@ -183,6 +188,7 @@ export async function signUp(email: string, password: string, fullName?: string)
     plan: 'free',
     queries_used: 0,
     queries_limit: 10,
+    tipo_usuario: tipoUsuario || 'cliente',
     colegiatura: '',
     legal_areas: [],
     credential_issued_at: null,
@@ -207,6 +213,7 @@ export async function signIn(email: string, password: string) {
       plan: profile?.plan || 'free',
       queries_used: profile?.queries_used || 0,
       queries_limit: profile?.queries_limit || 10,
+      tipo_usuario: profile?.tipo_usuario || 'cliente',
       colegiatura: profile?.colegiatura || '',
       legal_areas: profile?.legal_areas || [],
       credential_issued_at: profile?.credential_issued_at || null,
@@ -260,6 +267,7 @@ export async function getCurrentUser(cookieHeader?: string | null) {
       plan: profile.data?.plan || 'free',
       queries_used: profile.data?.queries_used || 0,
       queries_limit: profile.data?.queries_limit || 10,
+      tipo_usuario: profile.data?.tipo_usuario || 'cliente',
       colegiatura: profile.data?.colegiatura || '',
       legal_areas: profile.data?.legal_areas || [],
       credential_issued_at: profile.data?.credential_issued_at || null,
@@ -297,6 +305,7 @@ export async function getUserProfile(userId: string) {
 export async function updateUserProfile(userId: string, updates: {
   full_name?: string;
   plan?: string;
+  tipo_usuario?: UserType;
   colegiatura?: string;
   legal_areas?: LegalArea[];
   credential_issued_at?: string;

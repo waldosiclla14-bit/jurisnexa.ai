@@ -1,7 +1,9 @@
 import { NextRequest } from 'next/server';
 import { getCurrentUser, updateUserProfile } from '@/lib/auth';
 import { getSupabase, isSupabaseConfigured } from '@/lib/db/supabase';
-import { LegalArea } from '@/types';
+import { LegalArea, UserType } from '@/types';
+
+const VALID_TIPO_USUARIO = ['cliente', 'abogado'];
 
 export async function GET(request: NextRequest) {
   try {
@@ -105,9 +107,15 @@ export async function PUT(request: NextRequest) {
         return Response.json({ error: 'No autenticado' }, { status: 401 });
       }
       const body = await request.json();
-      const updates: { full_name?: string; plan?: string; colegiatura?: string; legal_areas?: LegalArea[] } = {};
+      const updates: { full_name?: string; plan?: string; tipo_usuario?: UserType; colegiatura?: string; legal_areas?: LegalArea[] } = {};
       if (body.fullName !== undefined) updates.full_name = body.fullName;
       if (body.plan !== undefined) updates.plan = body.plan;
+      if (body.tipoUsuario !== undefined) {
+        if (!VALID_TIPO_USUARIO.includes(body.tipoUsuario)) {
+          return Response.json({ error: 'Tipo de usuario no válido' }, { status: 400 });
+        }
+        updates.tipo_usuario = body.tipoUsuario as UserType;
+      }
       if (body.colegiatura !== undefined) updates.colegiatura = body.colegiatura;
       if (body.legal_areas !== undefined) updates.legal_areas = body.legal_areas;
       const updatedUser = await updateUserProfile(user.id, updates);
@@ -120,9 +128,15 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const updates: { full_name?: string; plan?: string; colegiatura?: string; legal_areas?: LegalArea[] } = {};
+    const updates: { full_name?: string; plan?: string; tipo_usuario?: UserType; colegiatura?: string; legal_areas?: LegalArea[] } = {};
     if (body.fullName !== undefined) updates.full_name = body.fullName;
     if (body.plan !== undefined) updates.plan = body.plan;
+    if (body.tipoUsuario !== undefined) {
+      if (!VALID_TIPO_USUARIO.includes(body.tipoUsuario)) {
+        return Response.json({ error: 'Tipo de usuario no válido' }, { status: 400 });
+      }
+      updates.tipo_usuario = body.tipoUsuario as UserType;
+    }
     if (body.colegiatura !== undefined) updates.colegiatura = body.colegiatura;
     if (body.legal_areas !== undefined) updates.legal_areas = body.legal_areas;
 
