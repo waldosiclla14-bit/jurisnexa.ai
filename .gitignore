@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+p-lock.yaml
+yarn-lock
+
+# Next.js build/output
+/.next/
+/out/
+
+# Environment variables
+.env.local
+
+# Vercel
+.vercel
+
+# Database
+*.sql
+
+# Spanish pub/sub
+*.pubsub
+
+# Logs
+*.log
+
+# Docusaurus
+.docusaurus/
+
+# Office files
+*.docx
+*.xlsx
+*.pptx
+
+# Office files from Windows
+Thumbs.db
+Desktop.ini
+
+# German
+/.cache/
+
+# Martin
+/.server/
+
+# Portuguese
+/.babelrc
+
+# Swedish
+/.phpmd
+
+# .git/
+/.git/
+
+# Portuguese
+/.svn/
+
+# OS specific
+.DS_Store
+/Thumbs.db
+.vercel
