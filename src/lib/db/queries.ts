@@ -319,3 +319,119 @@ export async function logTokenUsage(params: {
     });
   if (error) console.error('Error logging token usage:', error);
 }
+
+// --- Estudio: Casos ---
+export interface FirmCaso {
+  id: string;
+  firm_id: string;
+  cliente: string;
+  contraparte: string | null;
+  materia: string | null;
+  tribunal: string | null;
+  rol: number | null;
+  estado: 'activo' | 'pausado' | 'archivado' | 'perdido' | 'ganado';
+  vencimiento: string | null;
+  abogado_id: string | null;
+  notas: string | null;
+  created_at: string;
+  updated_at: string;
+  abogado?: { id: string; full_name: string | null; email: string } | null;
+}
+
+export async function listFirmCasos(firmId: string): Promise<FirmCaso[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('firm_casos')
+    .select(`
+      *,
+      abogado:abogado_id (id, full_name, email)
+    `)
+    .eq('firm_id', firmId)
+    .order('vencimiento', { ascending: true, nullsFirst: false });
+  if (error) throw error;
+  return (data || []).map((c: Record<string, unknown>) => ({
+    ...c,
+    abogado: Array.isArray(c.abogado) ? c.abogado[0] ?? null : c.abogado ?? null,
+  })) as FirmCaso[];
+}
+
+export async function createFirmCaso(params: {
+  firmId: string;
+  cliente: string;
+  contraparte?: string;
+  materia?: string;
+  tribunal?: string;
+  rol?: number | null;
+  estado?: string;
+  vencimiento?: string | null;
+  abogadoId?: string | null;
+  notas?: string;
+}): Promise<FirmCaso> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('firm_casos')
+    .insert({
+      firm_id: params.firmId,
+      cliente: params.cliente,
+      contraparte: params.contraparte || null,
+      materia: params.materia || null,
+      tribunal: params.tribunal || null,
+      rol: params.rol ?? null,
+      estado: params.estado || 'activo',
+      vencimiento: params.vencimiento || null,
+      abogado_id: params.abogadoId || null,
+      notas: params.notas || null,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data as FirmCaso;
+}
+
+export async function updateFirmCaso(
+  casoId: string,
+  firmId: string,
+  updates: Partial<{
+    cliente: string;
+    contraparte: string | null;
+    materia: string | null;
+    tribunal: string | null;
+    rol: number | null;
+    estado: string;
+    vencimiento: string | null;
+    abogadoId: string | null;
+    notas: string | null;
+  }>
+): Promise<FirmCaso> {
+  const supabase = getSupabase();
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (updates.cliente !== undefined) patch.cliente = updates.cliente;
+  if (updates.contraparte !== undefined) patch.contraparte = updates.contraparte;
+  if (updates.materia !== undefined) patch.materia = updates.materia;
+  if (updates.tribunal !== undefined) patch.tribunal = updates.tribunal;
+  if (updates.rol !== undefined) patch.rol = updates.rol;
+  if (updates.estado !== undefined) patch.estado = updates.estado;
+  if (updates.vencimiento !== undefined) patch.vencimiento = updates.vencimiento;
+  if (updates.abogadoId !== undefined) patch.abogado_id = updates.abogadoId;
+  if (updates.notas !== undefined) patch.notas = updates.notas;
+
+  const { data, error } = await supabase
+    .from('firm_casos')
+    .update(patch)
+    .eq('id', casoId)
+    .eq('firm_id', firmId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data as FirmCaso;
+}
+
+export async function deleteFirmCaso(casoId: string, firmId: string): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from('firm_casos')
+    .delete()
+    .eq('id', casoId)
+    .eq('firm_id', firmId);
+  if (error) throw error;
+}

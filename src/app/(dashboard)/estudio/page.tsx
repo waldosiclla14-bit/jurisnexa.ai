@@ -6,6 +6,7 @@ import { FirmProfileForm } from '@/components/firm/FirmProfileForm';
 import { FirmCredential } from '@/components/firm/FirmCredential';
 import { FirmMemberList } from '@/components/firm/FirmMemberList';
 import { FirmInviteForm } from '@/components/firm/FirmInviteForm';
+import FirmCaseList from '@/components/firm/FirmCaseList';
 import { LawFirm, FirmMembership, FirmRole, FirmInvitation } from '@/types';
 
 interface PendingInvitation {
@@ -227,6 +228,8 @@ export default function EstudioPage() {
       ) : (
         <>
           <FirmCredential firm={firmData.firm} memberCount={firmData.members.length} />
+
+          <FirmCaseList firmId={firmData.firm.id} isAdmin={firmData.isAdmin} />
 
           {firmData.isAdmin && (
             <FirmInviteForm onInvite={handleInvite} />
