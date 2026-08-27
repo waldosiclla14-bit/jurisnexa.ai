@@ -128,3 +128,72 @@ export interface LLMProvider {
 }
 
 export type LLMProviderType = 'openai' | 'anthropic' | 'google';
+
+// ============================================================
+// Estudios Jurídicos
+// ============================================================
+
+export type FirmRole = 'admin' | 'partner' | 'associate' | 'intern';
+
+export const FIRM_ROLE_LABELS: Record<FirmRole, string> = {
+  admin: 'Administrador',
+  partner: 'Socio',
+  associate: 'Asociado',
+  intern: 'Practicante',
+};
+
+export interface LawFirm {
+  id: string;
+  name: string;
+  slug: string;
+  ruc?: string;
+  rut?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  logo_url?: string;
+  description?: string;
+  plan: string;
+  queries_used: number;
+  queries_limit: number;
+  credential_issued_at?: string | null;
+  credential_expires_at?: string | null;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface FirmMembership {
+  id: string;
+  user_id: string;
+  firm_id: string;
+  role: FirmRole;
+  invited_by?: string;
+  joined_at?: string;
+  is_active: boolean;
+  user?: {
+    id: string;
+    email: string;
+    full_name: string;
+    colegiatura: string;
+    legal_areas: LegalArea[];
+  };
+}
+
+export interface FirmInvitation {
+  id: string;
+  firm_id: string;
+  invited_email: string;
+  invited_by?: string;
+  role: FirmRole;
+  token: string;
+  expires_at: string;
+  accepted: boolean;
+  created_at?: string;
+  firm?: {
+    id: string;
+    name: string;
+    slug: string;
+  };
+}

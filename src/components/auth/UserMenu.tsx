@@ -35,6 +35,9 @@ export function UserMenu() {
             <div className="p-4 border-b border-zinc-700">
               <p className="text-sm text-white font-medium">{user.full_name || 'Usuario'}</p>
               <p className="text-xs text-zinc-400">{user.email}</p>
+              {user.firm_name && (
+                <p className="mt-1 text-xs text-blue-400">🏛️ {user.firm_name}</p>
+              )}
               <div className="mt-2 flex items-center gap-2">
                 <span className={`px-2 py-0.5 text-xs rounded-full ${
                   user.plan === 'pro' ? 'bg-emerald-600 text-white' :
@@ -44,6 +47,11 @@ export function UserMenu() {
                 }`}>
                   {user.plan.charAt(0).toUpperCase() + user.plan.slice(1)}
                 </span>
+                {user.role_in_firm && (
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-blue-900/50 text-blue-300 border border-blue-800">
+                    {user.role_in_firm.charAt(0).toUpperCase() + user.role_in_firm.slice(1)}
+                  </span>
+                )}
                 <span className="text-xs text-zinc-400">
                   {user.queries_used}/{user.queries_limit} consultas
                 </span>

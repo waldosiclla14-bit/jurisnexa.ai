@@ -10,6 +10,14 @@ interface User {
   plan: string;
   queries_used: number;
   queries_limit: number;
+  colegiatura?: string;
+  legal_areas?: string[];
+  credential_issued_at?: string | null;
+  credential_expires_at?: string | null;
+  firm_id?: string | null;
+  role_in_firm?: string | null;
+  firm_name?: string | null;
+  firm_plan?: string | null;
 }
 
 interface AuthContextType {
