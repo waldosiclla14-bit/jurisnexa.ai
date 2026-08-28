@@ -52,4 +52,21 @@ describe('getSystemPromptWithLegalEngine — metodología LexChile', () => {
     expect(prompt).toContain('CLAIM → SOURCE');
     expect(prompt).toContain('CONTEXTO DOCUMENTAL ADICIONAL');
   });
+
+  it('define UN solo formato de respuesta por modo (sin estructuras en conflicto)', () => {
+    const cliente = getSystemPromptWithLegalEngine('CHILE', undefined, '', buildResult({ mode: 'cliente' }));
+    expect(cliente).toContain('DIAGNÓSTICO EN LENGUAJE SENCILLO');
+    expect(cliente).toContain('### Qué entendí');
+    expect(cliente).toContain('### Conclusión en simple');
+    expect(cliente).toContain('Advertencia');
+    expect(cliente).not.toContain('CAPA 1');
+    expect(cliente).not.toContain('### Análisis jurídico');
+
+    const abogado = getSystemPromptWithLegalEngine('CHILE', undefined, '', buildResult({ mode: 'abogado' }));
+    expect(abogado).toContain('DIAGNÓSTICO JURÍDICO PROFESIONAL');
+    expect(abogado).toContain('## 1. Resumen ejecutivo');
+    expect(abogado).toContain('## 13. Conclusión');
+    expect(abogado).not.toContain('CAPA 2');
+    expect(abogado).not.toContain('### Qué entendí');
+  });
 });

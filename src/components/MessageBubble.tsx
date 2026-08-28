@@ -15,9 +15,12 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const isDocumentDraft = !isUser && message.content.includes('SEÃ‘OR JUEZ') ||
-                           !isUser && message.content.includes('FUENTES CONSULTADAS') ||
-                           !isUser && message.content.includes('FUNDAMENTOS DE DERECHO');
+  const isDocumentDraft = !isUser && (
+    message.content.includes('SEÑOR JUEZ') ||
+    message.content.includes('SEÑOR/SEÑORA JUEZ') ||
+    message.content.includes('FUENTES CONSULTADAS') ||
+    message.content.includes('FUNDAMENTOS DE DERECHO')
+  );
 
   const handleDownloadPDF = () => {
     setIsDownloading(true);
@@ -112,13 +115,13 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           <span>{formatTime(message.timestamp)}</span>
           {message.country && (
             <>
-              <span>Â·</span>
-              <span>{message.country === 'PERU' ? 'ðŸ‡µðŸ‡ª PerÃº' : message.country === 'CHILE' ? 'ðŸ‡¨ðŸ‡± Chile' : 'ðŸŒŽ PerÃº/Chile'}</span>
+              <span>·</span>
+              <span>{message.country === 'PERU' ? '🇵🇪 Perú' : message.country === 'CHILE' ? '🇨🇱 Chile' : '🌎 Perú/Chile'}</span>
             </>
           )}
           {message.legalArea && (
             <>
-              <span>Â·</span>
+              <span>·</span>
               <span className="capitalize">{message.legalArea}</span>
             </>
           )}
@@ -168,6 +171,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
                       <polyline points="17 21 17 13 7 13 7 21" />
+                      <polyline points="7 3 7 8 15 8" />
                       <polyline points="7 3 7 8 15 8" />
                     </svg>
                   )}
@@ -274,7 +278,7 @@ function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSo
       );
     }
     // Warning block
-    else if (line.includes('NO ENCONTRÃ‰ UNA FUENTE') || line.includes('Advertencia') || line.includes('âš ï¸')) {
+    else if (line.includes('NO ENCONTRÉ UNA FUENTE') || line.includes('Advertencia') || line.includes('⚠')) {
       elements.push(
         <div key={key++} className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
           <p className="text-sm text-amber-300">

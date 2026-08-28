@@ -20,16 +20,16 @@ export default function ContactoPage() {
       <main className="mx-auto max-w-2xl px-4 py-16">
         <h1 className="text-4xl font-bold text-white mb-4">Contacto</h1>
         <p className="text-zinc-400 mb-8">
-          Â¿Tienes preguntas? Estamos aquÃ­ para ayudarte.
+          ¿Tienes preguntas? Estamos aquí para ayudarte.
         </p>
 
         <ContactForm />
 
         <div className="mt-12 p-6 bg-zinc-800/50 border border-zinc-700 rounded-xl">
-          <h3 className="text-lg font-semibold text-white mb-4">InformaciÃ³n de contacto</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">Información de contacto</h3>
           <div className="space-y-3 text-sm text-zinc-400">
             <p>Email: hola@jurisnexa.ai</p>
-            <p>Lima, PerÃº</p>
+            <p>Lima, Perú</p>
             <p>Horario: Lun - Vie, 9:00 AM - 6:00 PM (PET)</p>
           </div>
         </div>

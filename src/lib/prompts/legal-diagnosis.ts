@@ -55,84 +55,85 @@ function modeSection(mode: LegalEngineMode): string {
 
 function modeFormat(mode: LegalEngineMode, analysis: LegalAnalysisResult): string {
   const baseInfo = analysis.qualification.figureLabel
-    ? `- Figura jurídica detectada: ${analysis.qualification.figureLabel}`
-    : '- Figura jurídica: no detectada automáticamente; confirma antes de afirmarla.';
+    ? `Figura jurídica detectada: ${analysis.qualification.figureLabel}`
+    : (mode === 'abogado' ? 'Figura jurídica: no detectada automáticamente; confirma antes de afirmarla.' : '');
   const usr = analysis.usurpation;
   const usrBlock = usr?.matched
-    ? `- Motor de usurpación ACTIVADO. Artículo sugerido: Art. ${usr.suggestedArticle} Código Penal (módulo del movimiento).\n  Detección: ${usr.detectionNote}\n${usr.reformNote ? `  Reforma: ${usr.reformNote}` : ''}`
+    ? `- Motor de usurpación ACTIVADO. Artículo sugerido: Art. ${usr.suggestedArticle} Código Penal (módulo del movimiento).\n  - Detección: ${usr.detectionNote}\n  - ${usr.reformNote ?? ''}`
     : '';
+  const conclusion = verdictBlock(mode, analysis);
 
   switch (mode) {
     case 'abogado':
-      return `\nFORMATO DE RESPUESTA — DIAGNÓSTICO JURÍDICO (profesional, 2 capas):
+      return `\nFORMATO DE RESPUESTA — DIAGNÓSTICO JURÍDICO PROFESIONAL (estructura ÚNICA, sigue estas secciones en orden):
 
-# CAPA 1 — ANÁLISIS TÉCNICO (razonamiento)
-## 1. Antecedentes del caso
-Extrae de la consulta: partes, hechos, fechas y documentos. Señala lo ausente.
-
-## 2. Calificación jurídica
-${baseInfo}
+# ANÁLISIS JURÍDICO
+## 1. Resumen ejecutivo (máx 5-10 líneas, orientado a la decisión del profesional)
+## 2. Antecedentes del caso
+Partes, hechos, fechas y documentos señalados. Indica SIEMPRE lo que falta.
+## 3. Calificación jurídica
+- ${baseInfo}
 ${usrBlock}
-
-## 3. Normativa aplicable verificada
-Lista CLAIM → SOURCE con las normas del análisis automatizado. Claramente separa VERIFICADO de NO VERIFICADO.
-
-## 4. Subsunción de los hechos en la norma
-Para cada elemento normativo, indica si el hecho relatado lo cumple o falta información.
-
-## 5. Plazos de prescripción y vigencia
-Del apartado "Plazos y temporalidad" del motor: plazos, punto de partida, y fecha límite si es precisa.
-
-## 6. Medios de prueba
-Del apartado "Medios de prueba": qué hay, qué falta y qué valor probatorio tienen.
-
-## 7. Riesgos jurídicos
-Del apartado "Riesgos": ordenados por criticidad con recomendación de mitigación.
-
-## 8. Estrategia procesal sugerida
+## 4. Normativa aplicable verificada
+Lista con formato CLAIM → SOURCE: cada norma con [Norma] [N°] - [Art.] - [ESTADO: VERIFICADO/NO VERIFICADO] - [URL Ley Chile si existe]. Separa claramente VERIFICADO de NO VERIFICADO.
+## 5. Subsunción de los hechos en la norma
+Para cada elemento normativo: ¿el hecho relatado lo cumple? ¿falta información?
+## 6. Plazos de prescripción y vigencia
+Del apartado "Plazos y temporalidad" del motor: plazos, punto de partida y fecha límite si es precisa.
+## 7. Medios de prueba
+Del apartado "Medios de prueba" del motor: qué evidencia existe, qué falta y qué valor probatorio probable.
+## 8. Argumentos de ambas partes
+ARGUMENTOS FAVORABLES y ARGUMENTOS DE LA CONTRAPARTE (no favorecer al usuario sin análisis neutral).
+## 9. Riesgos jurídicos
+Del apartado "Riesgos" del motor: ordenados por criticidad (CRITICO/ALTO/MEDIO/BAJO) con mitigación.
+## 10. Escenarios posibles (A, B, C)
+Según varíen los hechos aún no aclarados.
+## 11. Acciones recomendadas (por prioridad)
 Vías posibles (cautelar, demanda, denuncia), tribunal competente por materia y pasos inmediatos. No garantizar resultados.
-
-# CAPA 2 — CONCLUSIÓN Y RECOMENDACIONES (para el profesional)
-Resumen ejecutivo de 3-5 puntos con acciones concretas priorizadas.`;
+## 12. Información faltante (preguntas necesarias)
+Solo lo indispensable para cambiar la conclusión (UNA pregunta a la vez, priorizando el motor).
+${conclusion}`;
     case 'investigacion':
-      return `\nFORMATO DE RESPUESTA — INFORME DE INVESTIGACIÓN JURÍDICA:
+      return `\nFORMATO DE RESPUESTA — INFORME DE INVESTIGACIÓN JURÍDICA (estructura ÚNICA):
 
 # Resumen ejecutivo
 # Estado normativo (jerarquía y vigencia — CLAIM → SOURCE)
 # Desarrollo por institutos jurídicos
 ## Análisis doctrinario
 ## Cambios legislativos relevantes (usa el motor)
-## Jurisprudencia (solo si está en contexto; si no, señalarlo y sugerir fuentes oficiales del motor)
+## Jurisprudencia (solo si está en contexto; si no, señalarlo y sugerir fuentes oficiales)
 # Preguntas abiertas y lagunas
 # Confianza y límites de la investigación
-${baseInfo}
+${baseInfo ? `\n- ${baseInfo}` : ''}
 ${usrBlock}`;
     default:
-      return `\nFORMATO DE RESPUESTA — DIAGNÓSTICO EN LENGUAJE SENCILLO:
+      return `\nFORMATO DE RESPUESTA — DIAGNÓSTICO EN LENGUAJE SENCILLO (estructura ÚNICA, sigue estas secciones en orden):
 
 ### Qué entendí
-Repite la situación en palabras simples para confirmar.
-
 ### Tu situación en un minuto
-Qué significa legalmente lo que relatas, sin tecnicismos.
-${baseInfo === '- Figura jurídica: no detectada automáticamente; confirma antes de afirmarla.' ? '' : '\n' + baseInfo}
+${baseInfo ? `Figura probable: ${analysis.qualification.figureLabel}.` : ''}
 ${usrBlock ? '\n' + usrBlock : ''}
-
 ### Qué puedes hacer (pasos)
-Máximo 5 pasos concretos, en orden ("primero, luego, después").
-
 ### Plazos que debes vigilar
-Del motor: plazos de prescripción y qué hacer antes de que venzan.
-
 ### Documentos que te conviene reunir
-Del apartado "Medios de prueba": qué papeles juntar.
-
 ### A dónde acudir
-Institución o profesional que corresponde según el tema (Carabineros/Ministerio Público para ocupación ilegal, DT para lo laboral, Sernac para consumo, etc.).
+${conclusion}`;
+  }
+}
+
+function verdictBlock(mode: LegalEngineMode, analysis: LegalAnalysisResult): string {
+  if (mode !== 'cliente' && mode !== 'abogado') return '';
+  const prefix = 'CONCLUSIÓN JURÍDICA';
+  const confidence = `Nivel de confianza: ${analysis.confidence.level} (${analysis.confidence.score}/99)`;
+  if (mode === 'cliente') {
+    return `\n### Conclusión en simple
+Resumen de 3-5 puntos: dónde estás, qué es lo más urgente, qué documento o dato necesitas confirmar y qué decisión prudente tomar. ${confidence}.
 
 ### Advertencia (SIEMPRE)
 "Esta información es orientativa y gratuita, NO sustituye la opinión de un abogado. Para tu caso concreto consulta a un profesional."`;
   }
+  return `\n## 13. Conclusión (${prefix})
+**Situación actual:** resumen | **Normas principales:** normas verificadas | **Fortalezas del caso:** lista | **Debilidades:** lista | **Prueba crítica:** lista | **Riesgo jurídico:** Bajo/Medio/Alto | **Principal incertidumbre:** explicación | **Siguiente acción recomendable:** acción | **Necesidad de abogado:** Sí/No/Recomendada | **${confidence}**`;
 }
 
 // Reexport para compatibilidad con el orquestador de prompts
