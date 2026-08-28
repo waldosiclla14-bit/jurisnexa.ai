@@ -107,13 +107,14 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
     };
     setMessages(prev => [...prev, userMessage]);
 
+    const assistantMessageId = crypto.randomUUID();
+
     try {
       // Read file as base64
       const arrayBuffer = await file.arrayBuffer();
       const base64 = Buffer.from(arrayBuffer).toString('base64');
 
       // Send to chat API with file data
-      const assistantMessageId = crypto.randomUUID();
       setMessages(prev => [...prev, {
         id: assistantMessageId,
         role: 'assistant',
@@ -151,6 +152,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
 
       const decoder = new TextDecoder();
       let fullContent = '';
+      let streamBuffer = '';
       let updatePending = false;
       let streamSources: { title: string; url: string | null; similarity: number }[] = [];
 
@@ -166,8 +168,9 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        streamBuffer += decoder.decode(value, { stream: true });
+        const lines = streamBuffer.split('\n');
+        streamBuffer = lines.pop() ?? '';
         for (const line of lines) {
           if (line.startsWith('__META__')) {
             try {
@@ -181,24 +184,22 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
             continue;
           }
           if (line.startsWith('__ERROR__')) throw new Error(line.slice(9));
-          if (line.trim()) {
-            fullContent += line;
-            if (!updatePending) {
-              updatePending = true;
-              setTimeout(flushUpdate, 50);
-            }
+          fullContent += line + '\n';
+          if (!updatePending) {
+            updatePending = true;
+            setTimeout(flushUpdate, 50);
           }
         }
       }
       if (updatePending) flushUpdate();
 
       setMessages((prev) =>
-        prev.map((m) => m.id === assistantMessageId ? { ...m, isStreaming: false } : m)
+        prev.map((m) => m.id === assistantMessageId ? { ...m, isStreaming: false, ...(streamSources.length > 0 ? { metadata: { ...m.metadata, sources: streamSources } } : {}) } : m)
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       setMessages(prev => prev.map(m =>
-        m.id === userMessage.id ? { ...m, content: `📄 Archivo: ${file.name}\n\nError: ${errorMessage}` } : m
+        m.id === assistantMessageId ? { ...m, content: `📄 Archivo: ${file.name}\n\nError: ${errorMessage}`, isStreaming: false } : m
       ));
     } finally {
       setIsLoading(false);
@@ -267,6 +268,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
 
       const decoder = new TextDecoder();
       let fullContent = '';
+      let streamBuffer = '';
       let updatePending = false;
       let streamSources: { title: string; url: string | null; similarity: number }[] = [];
 
@@ -285,8 +287,9 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        streamBuffer += decoder.decode(value, { stream: true });
+        const lines = streamBuffer.split('\n');
+        streamBuffer = lines.pop() ?? '';
 
         for (const line of lines) {
           if (line.startsWith('__META__')) {
@@ -305,12 +308,10 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
           if (line.startsWith('__ERROR__')) {
             throw new Error(line.slice(9));
           }
-          if (line.trim()) {
-            fullContent += line;
-            if (!updatePending) {
-              updatePending = true;
-              setTimeout(flushUpdate, 50);
-            }
+          fullContent += line + '\n';
+          if (!updatePending) {
+            updatePending = true;
+            setTimeout(flushUpdate, 50);
           }
         }
       }
@@ -424,13 +425,15 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
 
       const decoder = new TextDecoder();
       let fullContent = '';
+      let streamBuffer = '';
       let streamSources: { title: string; url: string | null; similarity: number }[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        streamBuffer += decoder.decode(value, { stream: true });
+        const lines = streamBuffer.split('\n');
+        streamBuffer = lines.pop() ?? '';
         for (const line of lines) {
           if (line.startsWith('__META__')) {
             try {
@@ -444,7 +447,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
             continue;
           }
           if (line.startsWith('__ERROR__')) throw new Error(line.slice(9));
-          if (line.trim()) fullContent += line;
+          fullContent += line + '\n';
         }
         setMessages(prev =>
           prev.map(m => m.id === assistantMessageId ? { ...m, content: fullContent, ...(streamSources.length > 0 ? { metadata: { ...m.metadata, sources: streamSources } } : {}) } : m)
@@ -505,13 +508,15 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
 
       const decoder = new TextDecoder();
       let fullContent = '';
+      let streamBuffer = '';
       let streamSources: { title: string; url: string | null; similarity: number }[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        streamBuffer += decoder.decode(value, { stream: true });
+        const lines = streamBuffer.split('\n');
+        streamBuffer = lines.pop() ?? '';
         for (const line of lines) {
           if (line.startsWith('__META__')) continue;
           if (line.startsWith('__SOURCES__')) {
@@ -519,7 +524,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
             continue;
           }
           if (line.startsWith('__ERROR__')) throw new Error(line.slice(9));
-          if (line.trim()) fullContent += line;
+          fullContent += line + '\n';
         }
         setMessages(prev =>
           prev.map(m => m.id === assistantMessageId ? { ...m, content: fullContent, ...(streamSources.length > 0 ? { metadata: { ...m.metadata, sources: streamSources } } : {}) } : m)
