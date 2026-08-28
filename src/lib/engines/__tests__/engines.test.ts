@@ -28,6 +28,13 @@ describe('LegalQualificationEngine', () => {
     expect(q.figure).toMatch(/usurpacion/i);
   });
 
+  it('no asume violencia ni daño en una ocupación sin esos marcadores', () => {
+    const q = legalQualificationEngine.qualify('estoy viviendo en una casa sin pagar arriendo, el dueño me amenaza con denunciarme por usurpación', extractFacts('estoy viviendo en una casa sin pagar arriendo'));
+    expect(q.figure).toBe('usurpacion-simple');
+    expect(q.figureLabel).toContain('458');
+    expect(q.figure).not.toMatch(/violencia/);
+  });
+
   it('detecta la figura de despido cuando hay señales laborales', () => {
     const q = legalQualificationEngine.qualify('el empleador me despidió injustificadamente después de 5 años', extractFacts('me despidieron injustificadamente'));
     expect(q.figure).toMatch(/despido/i);

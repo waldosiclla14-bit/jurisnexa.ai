@@ -209,99 +209,141 @@ function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSo
 
   let inTable = false;
   let tableRows: string[][] = [];
+  let listBuffer: { type: 'ul' | 'ol'; items: React.ReactNode[] } | null = null;
   let key = 0;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-
-    // Table detection
-    if (line.includes('|') && line.trim().startsWith('|')) {
-      if (line.replace(/[|\-\s]/g, '').length === 0) {
-        // Separator row, skip
-        continue;
-      }
-      const cells = line.split('|').filter(c => c.trim()).map(c => c.trim());
-      if (!inTable) inTable = true;
-      tableRows.push(cells);
-      continue;
-    } else if (inTable) {
-      // Flush table
-      elements.push(renderTable(tableRows, key++));
-      tableRows = [];
-      inTable = false;
+  const flushList = () => {
+    if (!listBuffer) return;
+    if (listBuffer.type === 'ul') {
+      elements.push(
+        <ul key={key++} className="my-3 ml-1 flex flex-col gap-1.5 pl-4" style={{ listStyleType: 'disc' }}>
+          {listBuffer.items}
+        </ul>
+      );
+    } else {
+      elements.push(
+        <ol key={key++} className="my-3 ml-1 flex flex-col gap-1.5 pl-4" style={{ listStyleType: 'decimal' }}>
+          {listBuffer.items}
+        </ol>
+      );
     }
+    listBuffer = null;
+  };
+
+  const pushListItem = (type: 'ul' | 'ol', item: React.ReactNode) => {
+    if (!listBuffer || listBuffer.type !== type) {
+      flushList();
+      listBuffer = { type, items: [item] };
+    } else {
+      listBuffer.items.push(item);
+    }
+  };
+
+  const renderLine = (line: string): boolean => {
+    const trimmed = line.trim();
 
     // Headers
-    if (line.startsWith('### ')) {
+    if (trimmed.startsWith('### ')) {
+      flushList();
       elements.push(
-        <h3 key={key++} className="mt-5 mb-2 text-sm font-bold text-emerald-400 uppercase tracking-wide">
-          {line.slice(4)}
+        <h3 key={key++} className="mt-6 mb-2 text-sm font-bold text-emerald-400 uppercase tracking-wide">
+          <ParsedInline text={trimmed.slice(4)} sources={sources} />
         </h3>
       );
-    } else if (line.startsWith('## ')) {
+    } else if (trimmed.startsWith('## ')) {
+      flushList();
       elements.push(
-        <h2 key={key++} className="mt-6 mb-3 text-base font-bold text-white">
-          {line.slice(3)}
+        <h2 key={key++} className="mt-7 mb-3 text-base font-bold text-white">
+          <ParsedInline text={trimmed.slice(3)} sources={sources} />
         </h2>
       );
-    } else if (line.startsWith('# ')) {
+    } else if (trimmed.startsWith('# ')) {
+      flushList();
       elements.push(
-        <h1 key={key++} className="mt-6 mb-3 text-lg font-bold text-white">
-          {line.slice(2)}
+        <h1 key={key++} className="mt-7 mb-3 text-lg font-bold text-white">
+          <ParsedInline text={trimmed.slice(2)} sources={sources} />
         </h1>
       );
     }
     // Bold lines
-    else if (line.startsWith('**') && line.endsWith('**')) {
+    else if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
+      flushList();
       elements.push(
-        <p key={key++} className="mt-2 text-sm font-bold text-white">
-          {line.slice(2, -2)}
+        <p key={key++} className="mt-5 mb-1.5 text-sm font-bold text-white">
+          <ParsedInline text={trimmed.slice(2, -2)} sources={sources} />
         </p>
       );
     }
     // Bullet points
-    else if (line.trim().startsWith('- ') || line.trim().startsWith('* ')) {
-      const text = line.trim().slice(2);
-      elements.push(
-        <li key={key++} className="ml-4 text-sm text-zinc-300 list-disc">
+    else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      const text = trimmed.slice(2);
+      pushListItem('ul', (
+        <li key={key++} className="text-sm leading-relaxed text-zinc-300">
           <ParsedInline text={text} sources={sources} />
         </li>
-      );
+      ));
     }
     // Numbered items
-    else if (/^\d+\.\s/.test(line.trim())) {
-      const text = line.trim().replace(/^\d+\.\s/, '');
-      elements.push(
-        <li key={key++} className="ml-4 text-sm text-zinc-300 list-decimal">
+    else if (/^\d+\.\s/.test(trimmed)) {
+      const text = trimmed.replace(/^\d+\.\s/, '');
+      pushListItem('ol', (
+        <li key={key++} className="text-sm leading-relaxed text-zinc-300">
           <ParsedInline text={text} sources={sources} />
         </li>
-      );
+      ));
     }
     // Warning block
     else if (line.includes('NO ENCONTRÉ UNA FUENTE') || line.includes('Advertencia') || line.includes('⚠')) {
+      flushList();
       elements.push(
-        <div key={key++} className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+        <div key={key++} className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
           <p className="text-sm text-amber-300">
             <ParsedInline text={line} sources={sources} />
           </p>
         </div>
       );
     }
-    // Empty lines
-    else if (line.trim() === '') {
-      // Skip
-    }
     // Regular text
-    else {
+    else if (trimmed !== '') {
+      flushList();
       elements.push(
-        <p key={key++} className="text-sm leading-relaxed text-zinc-300">
+        <p key={key++} className="my-2 text-sm leading-relaxed text-zinc-300">
           <ParsedInline text={line} sources={sources} />
         </p>
       );
+    } else {
+      return false;
     }
+    return true;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Table detection
+    if (trimmed.includes('|') && trimmed.startsWith('|')) {
+      if (trimmed.replace(/[|\-\s]/g, '').length === 0) {
+        // Separator row, skip
+        continue;
+      }
+      const cells = trimmed.split('|').filter(c => c.trim()).map(c => c.trim());
+      if (!inTable) inTable = true;
+      tableRows.push(cells);
+      continue;
+    } else if (inTable) {
+      // Flush table
+      flushList();
+      elements.push(renderTable(tableRows, key++));
+      tableRows = [];
+      inTable = false;
+    }
+
+    renderLine(line);
   }
 
-  // Flush remaining table
+  // Flush remaining list and table
+  flushList();
   if (inTable && tableRows.length > 0) {
     elements.push(renderTable(tableRows, key++));
   }
