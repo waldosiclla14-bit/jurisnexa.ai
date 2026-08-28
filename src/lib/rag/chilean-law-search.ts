@@ -13,7 +13,7 @@ function getIndexPath(): string {
   return path.join(getLeyesDataDir(), 'leyes-index.json');
 }
 
-interface LawIndexEntry {
+export interface LawIndexEntry {
   identifier: string;
   title: string;
   rank: string;
@@ -28,7 +28,7 @@ interface LawIndexEntry {
 let indexCache: LawIndexEntry[] | null = null;
 let indexCachePath: string = '';
 
-function loadIndex(): LawIndexEntry[] {
+export function loadIndex(): LawIndexEntry[] {
   const indexPath = getIndexPath();
   if (indexCache && indexCachePath === indexPath) return indexCache;
   if (!fs.existsSync(indexPath)) {
@@ -45,9 +45,13 @@ function normalize(s: string): string {
   return s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
+function normalizeArticleNumber(s: string): string {
+  return normalize(s).replace(/[^a-z0-9]/g, '');
+}
+
 const fileCache = new Map<string, { articles: { number: string; title: string; text: string }[] }>();
 
-function getFileArticles(identifier: string): { number: string; title: string; text: string }[] {
+export function getFileArticles(identifier: string): { number: string; title: string; text: string }[] {
   const cached = fileCache.get(identifier);
   if (cached) return cached.articles;
   const filePath = path.join(getLeyesDir(), `${identifier}.md`);
@@ -128,15 +132,16 @@ interface ChileanLawChunk {
 
 function extractArticles(content: string): { number: string; title: string; text: string }[] {
   const articles: { number: string; title: string; text: string }[] = [];
-  const headerRegex = /#####\s+(Artículo|Art\.?)\s+(\d+[a-z]?\.?)/gi;
+  const headerRegex = /^#{3,6}\s+(?:Artículo|Art\.?)\s+(\d{1,6})(?:\s+(BIS|TER|QUATER|QUÁTER|QUINQUIES|SEXIES|SEPTIES|OCTIES|NOVIES|DECIES|CENTIES)[ .]?)?\.?\s*\r?$/gim;
   const positions: { start: number; end: number; number: string; title: string }[] = [];
 
   let m: RegExpExecArray | null;
   while ((m = headerRegex.exec(content)) !== null) {
+    const suffix = (m[2] || '').toLowerCase().replace(/\.$/, '');
     positions.push({
       start: m.index,
       end: m.index + m[0].length,
-      number: m[2].replace(/\.$/, ''),
+      number: suffix ? `${m[1]} ${suffix}` : m[1].replace(/\.$/, ''),
       title: m[0].replace(/^#+\s*/, ''),
     });
   }
@@ -174,7 +179,7 @@ function searchInFile(identifier: string, keywords: string[], targetArticle?: st
     const lawTitleNorm = normalize(lawMeta.title);
     if (keywords.some(kw => lawTitleNorm.includes(kw))) relevance += 3;
     // El artículo explícitamente solicitado tiene prioridad total dentro de su ley
-    if (targetArticle && article.number.replace(/\.$/, '').toLowerCase() === targetArticle) {
+    if (targetArticle && normalizeArticleNumber(article.number) === normalizeArticleNumber(targetArticle)) {
       relevance += 1000;
     }
     if (relevance > 0) {
@@ -309,10 +314,10 @@ function mapEstado(raw: string | null | undefined): NoneVigencia {
 }
 
 function extractArticleNumber(query: string): string | null {
-  const m = query.match(/art[ií]?culo?s?\s*([\d]{1,4}[a-z]?)/i);
+  const suffixSeg = '(?:bis|ter|quater|quáter|quinquies|sexies|septies|octies|novies|decies|centies)\\b';
+  const reArt = new RegExp(`(?:art[ií]?culo\\b|art\\.?)\\s*(\\d{1,6}(?:\\s+${suffixSeg})?)\\b`, 'i');
+  const m = query.match(reArt);
   if (m) return m[1].replace(/\.$/, '').toLowerCase();
-  const m2 = query.match(/\bart\.?\s*([\d]{1,4}[a-z]?)/i);
-  if (m2) return m2[1].replace(/\.$/, '').toLowerCase();
   return null;
 }
 
@@ -366,8 +371,7 @@ export function verifyChileanLaw(query: string): ChileanLawVerification {
   if (articulo) {
     const articles = getFileArticles(law.identifier);
     const found = articles.find(a => {
-      const clean = normalize(a.number.replace(/\.$/, ''));
-      return clean === articulo || clean.replace(/\s/g, '') === articulo;
+      return normalizeArticleNumber(a.number) === normalizeArticleNumber(articulo);
     });
     if (found) fragmento = found.text.substring(0, 1400);
     else if (articles.length > 0) {
@@ -396,3 +400,37 @@ export function verifyChileanLaw(query: string): ChileanLawVerification {
     nota: fragmento ? undefined : 'Se verificó la ley, pero no se indicó un número de artículo en la consulta.',
   };
 }
+
+export function findLawByIdentifier(identifier: string): LawIndexEntry | undefined {
+  return loadIndex().find(l => l.identifier === identifier);
+}
+
+export function findLawByTitle(query: string): LawIndexEntry | undefined {
+  const index = loadIndex();
+  const nq = normalize(query);
+  let best: LawIndexEntry | undefined;
+  let bestScore = 0;
+  const qWords = nq.split(/\s+/).filter(w => w.length > 2);
+  for (const entry of index) {
+    const title = normalize(entry.title);
+    if (!title) continue;
+    let score = 0;
+    if (title.includes(nq)) score += 10;
+    for (const w of qWords) {
+      if (title.includes(w)) score++;
+    }
+    score += 1 / entry.title.length;
+    if (score > bestScore) {
+      bestScore = score;
+      best = entry;
+    }
+  }
+  return bestScore > 0 ? best : undefined;
+}
+
+export function findArticleByIdentifier(identifier: string, articleNumber: string) {
+  const num = normalizeArticleNumber(articleNumber);
+  return getFileArticles(identifier).find(a => normalizeArticleNumber(a.number) === num);
+}
+
+export { normalizeArticleNumber, normalize, extractArticleNumber };

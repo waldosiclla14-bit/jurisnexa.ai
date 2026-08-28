@@ -3,11 +3,13 @@ import { createLLMProvider, getProviderInfo } from '@/lib/llm/provider';
 import { getSystemPromptWithRAG } from '@/lib/prompts/system';
 import { searchRelevantContext, shouldUseRAG } from '@/lib/rag';
 import { isSupabaseConfigured, getSupabase } from '@/lib/db/supabase';
-import { searchChileanLaws, searchChileanLawsWithSources } from '@/lib/rag/chilean-law-search';
+import { searchChileanLawsWithSources } from '@/lib/rag/chilean-law-search';
 import { chatLimiter, rateLimitResponse } from '@/lib/rate-limit';
 import { createConversation, insertMessage, updateConversation } from '@/lib/db/queries';
 import { ChatRequest, Country, LegalArea, UserType } from '@/types';
 import { getCurrentUser } from '@/lib/auth';
+import { analyzeLegalCase } from '@/lib/engines';
+import { getSystemPromptWithLegalEngine } from '@/lib/prompts/legal-diagnosis';
 
 async function resolveTipoUsuario(
   request: NextRequest,
@@ -141,7 +143,34 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const systemPrompt = getSystemPromptWithRAG(country, legalArea, ragContext + documentContext, tipoUsuario);
+    // Motor avanzado de análisis jurídico (Chile): análisis estructurado sobre el corpus local
+    const legalAnalysis = country === 'CHILE'
+      ? analyzeLegalCase({
+          message: sanitizedMessage,
+          country,
+          legalArea,
+          tipoUsuario,
+          history: body.history,
+          documentText: documentContext || undefined,
+          mode: tipoUsuario === 'abogado' ? 'abogado' : 'cliente',
+        })
+      : null;
+
+    let systemPrompt: string;
+    if (legalAnalysis) {
+      systemPrompt = getSystemPromptWithLegalEngine(country, legalArea, ragContext + documentContext, legalAnalysis);
+      ragSources = dedupeSources([
+        ...ragSources,
+        ...legalAnalysis.sources.map(s => ({
+          title: s.title,
+          url: s.url,
+          similarity: 1,
+        })),
+      ]);
+    } else {
+      systemPrompt = getSystemPromptWithRAG(country, legalArea, ragContext + documentContext, tipoUsuario);
+    }
+
     const provider = createLLMProvider();
     const providerInfo = getProviderInfo();
 
@@ -172,6 +201,10 @@ export async function POST(request: NextRequest) {
             ragUsed: ragSources.length > 0,
             ragSourceCount: ragSources.length,
             conversationId: conversationId || null,
+            confidenceScore: legalAnalysis?.confidence.score ?? null,
+            confidenceLevel: legalAnalysis?.confidence.level ?? null,
+            detectedFigure: legalAnalysis?.qualification.figureLabel ?? null,
+            engineMode: legalAnalysis?.mode ?? null,
           });
           controller.enqueue(encoder.encode(`__META__${metadata}\n`));
 
@@ -236,4 +269,14 @@ export async function POST(request: NextRequest) {
     const message = error instanceof Error ? error.message : 'Error interno del servidor';
     return Response.json({ error: message }, { status: 500 });
   }
+}
+
+function dedupeSources(sources: { title: string; url: string | null; similarity: number }[]) {
+  const seen = new Set<string>();
+  return sources.filter(s => {
+    const key = `${s.title}|||${s.url}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
