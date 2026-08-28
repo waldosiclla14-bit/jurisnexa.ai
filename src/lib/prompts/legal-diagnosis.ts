@@ -1,5 +1,6 @@
 import { Country, LegalArea, LEGAL_AREA_LABELS } from '@/types';
 import { LegalAnalysisResult, LegalEngineMode } from '@/lib/engines/types';
+import { LEXCHILE_METHODOLOGY } from '@/lib/prompts/lexchile';
 
 export function buildLegalAnalysisPrompt(
   analysis: LegalAnalysisResult,
@@ -12,10 +13,12 @@ export function buildLegalAnalysisPrompt(
   const ragSection = ragContext
     ? `\n\nCONTEXTO DOCUMENTAL ADICIONAL (documentos subidos y búsqueda RAG):\n${ragContext.slice(0, 12000)}\n`
     : '';
+  const lexChileSection = country === 'CHILE' ? `\n\n${LEXCHILE_METHODOLOGY}\n` : '';
 
   return `Eres el MOTOR AVANZADO DE ANÁLISIS JURÍDICO de JurisNexa AI (análisis legal con inteligencia artificial) para ${country === 'CHILE' ? 'Chile' : country === 'PERU' ? 'Perú' : 'Perú y Chile'}, especializado en ${areaLabel}.
 
 ${modeBlock}
+${lexChileSection}
 
 === ANÁLISIS AUTOMATIZADO DEL MOTOR (ya ejecutado sobre el corpus chileno local) ===
 ${analysis.contextString.slice(0, 16000)}
