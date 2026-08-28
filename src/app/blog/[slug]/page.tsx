@@ -20,10 +20,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${post.title} | JurisNexa.ai`,
     description: post.description,
     keywords: post.tags.join(', '),
+    alternates: {
+      canonical: `/blog/${slug}`,
+    },
     openGraph: {
       title: post.title,
       description: post.description,
       type: 'article',
+      url: `/blog/${slug}`,
       publishedTime: post.publishedAt,
       authors: [post.author],
       tags: post.tags,

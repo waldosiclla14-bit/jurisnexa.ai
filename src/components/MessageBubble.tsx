@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useState } from 'react';
 import { Message } from '@/types';
@@ -15,7 +15,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const isDocumentDraft = !isUser && message.content.includes('SEÑOR JUEZ') ||
+  const isDocumentDraft = !isUser && message.content.includes('SEÃ‘OR JUEZ') ||
                            !isUser && message.content.includes('FUENTES CONSULTADAS') ||
                            !isUser && message.content.includes('FUNDAMENTOS DE DERECHO');
 
@@ -104,7 +104,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
         ) : (
           <div className="prose prose-invert prose-sm max-w-none">
-            <LegalMarkdown content={message.content} />
+            <LegalMarkdown content={message.content} sources={message.metadata?.sources as ChatSource[] | undefined} />
           </div>
         )}
 
@@ -112,13 +112,13 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           <span>{formatTime(message.timestamp)}</span>
           {message.country && (
             <>
-              <span>·</span>
-              <span>{message.country === 'PERU' ? '🇵🇪 Perú' : message.country === 'CHILE' ? '🇨🇱 Chile' : '🌎 Perú/Chile'}</span>
+              <span>Â·</span>
+              <span>{message.country === 'PERU' ? 'ðŸ‡µðŸ‡ª PerÃº' : message.country === 'CHILE' ? 'ðŸ‡¨ðŸ‡± Chile' : 'ðŸŒŽ PerÃº/Chile'}</span>
             </>
           )}
           {message.legalArea && (
             <>
-              <span>·</span>
+              <span>Â·</span>
               <span className="capitalize">{message.legalArea}</span>
             </>
           )}
@@ -191,7 +191,14 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
   );
 }
 
-function LegalMarkdown({ content }: { content: string }) {
+interface ChatSource {
+  id?: string;
+  title: string;
+  url: string | null;
+  similarity?: number;
+}
+
+function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSource[] | undefined }) {
   // Simple markdown parser for legal responses
   const lines = content.split('\n');
   const elements: React.ReactNode[] = [];
@@ -253,7 +260,7 @@ function LegalMarkdown({ content }: { content: string }) {
       const text = line.trim().slice(2);
       elements.push(
         <li key={key++} className="ml-4 text-sm text-zinc-300 list-disc">
-          <ParsedInline text={text} />
+          <ParsedInline text={text} sources={sources} />
         </li>
       );
     }
@@ -262,16 +269,16 @@ function LegalMarkdown({ content }: { content: string }) {
       const text = line.trim().replace(/^\d+\.\s/, '');
       elements.push(
         <li key={key++} className="ml-4 text-sm text-zinc-300 list-decimal">
-          <ParsedInline text={text} />
+          <ParsedInline text={text} sources={sources} />
         </li>
       );
     }
     // Warning block
-    else if (line.includes('NO ENCONTRÉ UNA FUENTE') || line.includes('Advertencia') || line.includes('⚠️')) {
+    else if (line.includes('NO ENCONTRÃ‰ UNA FUENTE') || line.includes('Advertencia') || line.includes('âš ï¸')) {
       elements.push(
         <div key={key++} className="mt-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
           <p className="text-sm text-amber-300">
-            <ParsedInline text={line} />
+            <ParsedInline text={line} sources={sources} />
           </p>
         </div>
       );
@@ -284,7 +291,7 @@ function LegalMarkdown({ content }: { content: string }) {
     else {
       elements.push(
         <p key={key++} className="text-sm leading-relaxed text-zinc-300">
-          <ParsedInline text={line} />
+          <ParsedInline text={line} sources={sources} />
         </p>
       );
     }
@@ -298,8 +305,8 @@ function LegalMarkdown({ content }: { content: string }) {
   return <>{elements}</>;
 }
 
-function ParsedInline({ text }: { text: string }) {
-  // Parse bold, italic, and inline code
+function ParsedInline({ text, sources }: { text: string; sources?: ChatSource[] | undefined }) {
+  // Parse bold, italic, inline code and citation refs [n]
   const parts: (string | React.ReactNode)[] = [];
   let remaining = text;
   let key = 0;
@@ -309,13 +316,19 @@ function ParsedInline({ text }: { text: string }) {
     const boldMatch = remaining.match(/\*\*(.+?)\*\*/);
     // Inline code
     const codeMatch = remaining.match(/`(.+?)`/);
+    // Citation ref [n] or [n,m]
+    const refMatch = remaining.match(/\[(\d+(?:\s*,\s*\d+)*)\]/);
 
-    let firstMatch: { type: 'bold' | 'code'; index: number; match: RegExpMatchArray } | null = null;
+    let firstMatch: { type: 'bold' | 'code' | 'ref'; index: number; match: RegExpMatchArray } | null = null;
 
-    if (boldMatch && (!codeMatch || (boldMatch.index ?? 0) < (codeMatch.index ?? 0))) {
-      firstMatch = { type: 'bold', index: boldMatch.index ?? 0, match: boldMatch };
-    } else if (codeMatch) {
-      firstMatch = { type: 'code', index: codeMatch.index ?? 0, match: codeMatch };
+    const candidates: { type: 'bold' | 'code' | 'ref'; index: number; match: RegExpMatchArray }[] = [];
+    if (boldMatch) candidates.push({ type: 'bold', index: boldMatch.index ?? 0, match: boldMatch });
+    if (codeMatch) candidates.push({ type: 'code', index: codeMatch.index ?? 0, match: codeMatch });
+    if (refMatch) candidates.push({ type: 'ref', index: refMatch.index ?? 0, match: refMatch });
+
+    if (candidates.length > 0) {
+      candidates.sort((a, b) => a.index - b.index);
+      firstMatch = candidates[0];
     }
 
     if (!firstMatch) {
@@ -329,6 +342,15 @@ function ParsedInline({ text }: { text: string }) {
 
     if (firstMatch.type === 'bold') {
       parts.push(<strong key={key++} className="font-semibold text-white">{firstMatch.match[1]}</strong>);
+    } else if (firstMatch.type === 'ref') {
+      const nums = firstMatch.match[1].split(',').map(n => parseInt(n.trim(), 10)).filter(n => !isNaN(n) && n > 0);
+      parts.push(
+        <span key={key++} className="inline-flex gap-1 align-super">
+          {nums.map((n, i) => (
+            <CitationRef key={i} n={n} sources={sources} />
+          ))}
+        </span>
+      );
     } else {
       parts.push(
         <code key={key++} className="rounded bg-zinc-800 px-1 py-0.5 text-xs text-emerald-300">
@@ -341,6 +363,23 @@ function ParsedInline({ text }: { text: string }) {
   }
 
   return <>{parts}</>;
+}
+
+function CitationRef({ n, sources }: { n: number; sources?: ChatSource[] | undefined }) {
+  const source = sources && sources[n - 1];
+  const inner = <span className="text-[10px] font-bold text-emerald-400">[{n}]</span>;
+  if (!source?.url) return <span className="text-[10px] font-bold text-emerald-400/70">[{n}]</span>;
+  return (
+    <a
+      href={source.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={source.title}
+      className="no-underline hover:underline"
+    >
+      {inner}
+    </a>
+  );
 }
 
 function renderTable(rows: string[][], key: number) {
@@ -392,18 +431,16 @@ function extractTitle(content: string): string {
   return content.substring(0, 80).replace(/\n/g, ' ').trim();
 }
 
-function SourcesBlock({ sources }: { sources: { title: string; url: string | null; similarity?: number }[] | undefined }) {
+function SourcesBlock({ sources }: { sources: ChatSource[] | undefined }) {
   if (!sources || sources.length === 0) return null;
-  const displaySources = sources
-    .sort((a, b) => (b.similarity || 0) - (a.similarity || 0))
-    .slice(0, 8);
+  const displaySources = sources.slice(0, 8);
   return (
     <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
       <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Fuentes consultadas ({sources.length} total)</p>
       <div className="flex flex-col gap-1.5">
         {displaySources.map((src, i) => (
           <div key={i} className="flex items-start gap-2 text-xs text-zinc-400">
-            <span className="mt-0.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-emerald-500/60" />
+            <span className="mt-px flex-shrink-0 text-[10px] font-bold text-emerald-400">[{i + 1}]</span>
             {src.url ? (
               <a href={src.url} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors">{src.title}</a>
             ) : (

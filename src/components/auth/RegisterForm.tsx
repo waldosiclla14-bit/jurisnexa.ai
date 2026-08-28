@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useAuth } from './AuthProvider';
+import { GoogleButton } from './GoogleButton';
 import { UserType } from '@/types';
 
 export function RegisterForm() {
@@ -50,7 +51,14 @@ export function RegisterForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-4">
+      <GoogleButton redirectTo="/chat" />
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-zinc-800" />
+        <span className="text-xs text-zinc-500">o regístrate con tu email</span>
+        <div className="h-px flex-1 bg-zinc-800" />
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-zinc-300 mb-1">Nombre completo</label>
         <input
@@ -136,7 +144,8 @@ export function RegisterForm() {
         className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-medium rounded-lg transition-colors"
       >
         {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
-      </button>
-    </form>
+        </button>
+      </form>
+    </div>
   );
 }

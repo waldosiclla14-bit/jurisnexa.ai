@@ -201,7 +201,7 @@ function searchInFile(identifier: string, keywords: string[], targetArticle?: st
 
 export interface ChileanSearchResult {
   contextString: string;
-  sources: { title: string; url: string | null; similarity: number }[];
+  sources: { id: string; title: string; url: string | null; similarity: number }[];
 }
 
 export function searchChileanLawsWithSources(query: string, maxChunks = 8): ChileanSearchResult {
@@ -253,6 +253,7 @@ export function searchChileanLawsWithSources(query: string, maxChunks = 8): Chil
   if (topResults.length === 0) return { contextString: '', sources: [] };
 
   const sources = topResults.map(chunk => ({
+    id: `${chunk.identifier}:${chunk.articleNumber}`,
     title: `${chunk.title} — Art. ${chunk.articleNumber}`,
     url: `https://www.leychile.cl/Navegar?idNorma=${chunk.identifier.replace('CL-', '')}`,
     similarity: Math.min(1, chunk.relevance / 10),

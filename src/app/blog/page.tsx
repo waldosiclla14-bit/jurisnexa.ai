@@ -1,12 +1,16 @@
-import { blogPosts } from '@/lib/blog';
+﻿import { blogPosts } from '@/lib/blog';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { Footer } from '@/components/landing/Footer';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Blog | JurisNexa.ai',
-  description: 'Artículos sobre derecho, legislación y consultas legales en Perú y Chile.',
+  description: 'ArtÃ­culos sobre derecho, legislaciÃ³n y consultas legales en PerÃº y Chile.',
+  alternates: {
+    canonical: '/blog',
+  },
 };
+
 
 export default function BlogPage() {
   return (
@@ -17,7 +21,7 @@ export default function BlogPage() {
         <div className="text-center mb-16">
           <h1 className="text-4xl font-bold text-white mb-4">Blog</h1>
           <p className="text-zinc-400 max-w-2xl mx-auto">
-            Artículos sobre derecho, legislación y consultas legales en Perú y Chile.
+            ArtÃ­culos sobre derecho, legislaciÃ³n y consultas legales en PerÃº y Chile.
           </p>
         </div>
 
@@ -34,7 +38,7 @@ export default function BlogPage() {
                 <span className="text-xs text-zinc-500">
                   {new Date(post.publishedAt).toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' })}
                 </span>
-                <span className="text-xs text-zinc-500">• {post.readingTime} min de lectura</span>
+                <span className="text-xs text-zinc-500">â€¢ {post.readingTime} min de lectura</span>
               </div>
 
               <h2 className="text-xl font-bold text-white mb-2">

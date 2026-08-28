@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
 
     // RAG: search for relevant legal context if DB is configured
     let ragContext = '';
-    let ragSources: { title: string; url: string | null; similarity: number }[] = [];
+    let ragSources: { id: string; title: string; url: string | null; similarity: number }[] = [];
 
     if (isSupabaseConfigured() && shouldUseRAG(sanitizedMessage)) {
       try {
@@ -73,7 +73,10 @@ export async function POST(request: NextRequest) {
           const url = (c.source_url && c.source_url.startsWith('http'))
             ? c.source_url
             : null;
-          return { title, url, similarity: c.similarity };
+          const id = c.article_number
+            ? `${c.document_title}:${c.article_number}`
+            : c.id || `${c.document_title}:general`;
+          return { id, title, url, similarity: c.similarity };
         });
       } catch (ragError) {
         console.warn('RAG search failed, proceeding without context:', ragError);
@@ -162,13 +165,20 @@ export async function POST(request: NextRequest) {
       ragSources = dedupeSources([
         ...ragSources,
         ...legalAnalysis.sources.map(s => ({
-          title: s.title,
+          id: `${s.identifier}:${s.articleNumber}`,
+          title: `${s.title} — Art. ${s.articleNumber}`,
           url: s.url,
           similarity: 1,
         })),
       ]);
     } else {
       systemPrompt = getSystemPromptWithRAG(country, legalArea, ragContext + documentContext, tipoUsuario);
+    }
+
+    // Lista numerada de fuentes para citas inline [n] en la respuesta
+    const sourceIndex = buildSourceIndex(ragSources);
+    if (sourceIndex) {
+      systemPrompt += `\n\n=== FUENTES NUMERADAS DISPONIBLES ===\n${sourceIndex}\n=== FIN DE FUENTES ===\n\nIMPORTANTE: cuando cites una norma de estas fuentes, agrega el número entre corchetes [n] justo después de la mención (ej.: "según el Código Penal [1]"). Cada afirmación con fuente debe llevar su [n] correspondiente.`;
     }
 
     const provider = createLLMProvider();
@@ -239,7 +249,7 @@ export async function POST(request: NextRequest) {
           if (ragSources.length > 0) {
             const seen = new Set<string>();
             const uniqueSources = ragSources.filter(s => {
-              const key = `${s.title}|||${s.url}`;
+              const key = s.id || `${s.title}|||${s.url}`;
               if (seen.has(key)) return false;
               seen.add(key);
               return true;
@@ -271,12 +281,24 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function dedupeSources(sources: { title: string; url: string | null; similarity: number }[]) {
+function dedupeSources(sources: { id: string; title: string; url: string | null; similarity: number }[]) {
   const seen = new Set<string>();
   return sources.filter(s => {
-    const key = `${s.title}|||${s.url}`;
+    const key = s.id || `${s.title}|||${s.url}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+}
+
+function buildSourceIndex(sources: { id: string; title: string; url: string | null }[]): string {
+  const seen = new Set<string>();
+  const lines: string[] = [];
+  sources.forEach(s => {
+    const key = s.id || `${s.title}|||${s.url}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    lines.push(`[${lines.length + 1}] ${s.title}${s.url ? ` — ${s.url}` : ''}`);
+  });
+  return lines.join('\n');
 }

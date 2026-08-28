@@ -1,5 +1,5 @@
-import { NextRequest } from 'next/server';
-import { signUp, signIn, signOut, getCurrentUser } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
+import { signUp, signIn, signOut, getCurrentUser, signInWithGoogle, handleGoogleCallback, DEMO_COOKIE } from '@/lib/auth';
 import { authLimiter, rateLimitResponse } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
@@ -31,10 +31,32 @@ export async function POST(request: NextRequest) {
         return Response.json({ user: data.user, session: data.session });
       }
 
+      case 'google_login': {
+        const { redirectTo } = body;
+        const origin = request.headers.get('origin') || request.nextUrl.origin;
+        const data = await signInWithGoogle(redirectTo || `${origin}/auth/callback`);
+        return Response.json({ url: data.url });
+      }
+
+      case 'google_callback': {
+        const { code, redirectTo } = body;
+        if (!code) {
+          return Response.json({ error: 'Código de autorización requerido' }, { status: 400 });
+        }
+        const data = await handleGoogleCallback(code, redirectTo);
+        const response = NextResponse.json({ user: data.user, session: data.session });
+        response.cookies.set(DEMO_COOKIE, encodeURIComponent(data.user.email), {
+          path: '/',
+          maxAge: 86400,
+          sameSite: 'lax',
+        });
+        return response;
+      }
+
       case 'signout': {
         await signOut();
         const response = Response.json({ success: true });
-        response.headers.set('Set-Cookie', 'jurisnexa_demo_session=; Path=/; Max-Age=0');
+        response.headers.set('Set-Cookie', `${DEMO_COOKIE}=; Path=/; Max-Age=0`);
         return response;
       }
 

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { SITE_URL } from "@/lib/site";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -9,6 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "JurisNexa.ai | Asistente Jurídico IA - Perú y Chile",
     template: "%s | JurisNexa.ai",
@@ -17,32 +19,25 @@ export const metadata: Metadata = {
   keywords: ["asistente jurídico", "inteligencia artificial", "legislación Perú", "legislación Chile", "derecho", "consulta legal", "abogado IA"],
   authors: [{ name: "JurisNexa.ai" }],
   creator: "JurisNexa.ai",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     type: "website",
     locale: "es_PE",
-    url: "https://jurisnexa.ai",
+    url: "/",
     siteName: "JurisNexa.ai",
     title: "JurisNexa.ai | Asistente Jurídico IA",
     description: "Consultas legales inteligentes especializadas en Perú y Chile",
-    images: [
-      {
-        url: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "JurisNexa.ai - Asistente Jurídico IA",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "JurisNexa.ai | Asistente Jurídico IA",
     description: "Consultas legales inteligentes especializadas en Perú y Chile",
-    images: ["/og-image.png"],
   },
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
-    apple: "/apple-touch-icon.svg",
   },
   manifest: "/manifest.json",
   robots: {
@@ -70,7 +65,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="es" className={`${inter.variable} h-full`} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
       </head>
       <body className="min-h-full bg-zinc-950 text-white antialiased">
         <AuthProvider>{children}</AuthProvider>

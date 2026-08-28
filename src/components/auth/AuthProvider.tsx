@@ -27,6 +27,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName?: string, tipoUsuario?: UserType) => Promise<void>;
+  signInWithGoogle: (redirectTo?: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -80,6 +81,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.push('/chat');
   };
 
+  const signInWithGoogle = async (redirectTo?: string) => {
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'google_login', redirectTo }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    if (data.url) {
+      window.location.href = data.url;
+    }
+  };
+
   const signOut = async () => {
     await fetch('/api/auth', {
       method: 'POST',
@@ -91,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, signOut, refreshUser }}>
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, signInWithGoogle, signOut, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

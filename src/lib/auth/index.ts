@@ -29,6 +29,8 @@ export interface AuthUser {
 const DEMO_COOKIE = 'jurisnexa_demo_session';
 const DEMO_USERS_KEY = 'jurisnexa_demo_users';
 
+export { DEMO_COOKIE };
+
 function hashPassword(password: string): string {
   const salt = randomBytes(16).toString('hex');
   const hash = createHash('sha256').update(salt + password).digest('hex');
@@ -240,6 +242,95 @@ export async function signIn(email: string, password: string) {
   return { user: entry.user, session: null };
 }
 
+export async function signInWithGoogle(redirectTo: string) {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Google Login requiere Supabase configurado. Contacta a soporte.');
+  }
+  const supabase = getSupabase();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo },
+  });
+  if (error) throw error;
+  return { url: data.url };
+}
+
+export async function handleGoogleCallback(code: string, redirectTo?: string | null) {
+  if (!isSupabaseConfigured()) {
+    throw new Error('Google Login requiere Supabase configurado. Contacta a soporte.');
+  }
+  const supabase = getSupabase();
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  if (error) throw error;
+  const sbUser = data.user;
+  if (!sbUser?.email) throw new Error('No se pudo obtener el correo de tu cuenta de Google');
+
+  const profile = await supabase
+    .from('users')
+    .select('*')
+    .eq('id', sbUser.id)
+    .maybeSingle();
+
+  let plan = 'free';
+  let queries_used = 0;
+  let queries_limit = 10;
+  let tipo_usuario: UserType = 'cliente';
+  let colegiatura = '';
+  let legal_areas: LegalArea[] = [];
+  let credential_issued_at: string | null = null;
+  let credential_expires_at: string | null = null;
+  let fullName = sbUser.user_metadata?.full_name || sbUser.user_metadata?.name || '';
+
+  if (profile.data) {
+    plan = profile.data.plan || 'free';
+    queries_used = profile.data.queries_used || 0;
+    queries_limit = profile.data.queries_limit || 10;
+    tipo_usuario = profile.data.tipo_usuario || 'cliente';
+    colegiatura = profile.data.colegiatura || '';
+    legal_areas = profile.data.legal_areas || [];
+    credential_issued_at = profile.data.credential_issued_at || null;
+    credential_expires_at = profile.data.credential_expires_at || null;
+    fullName = profile.data.full_name || fullName;
+  } else {
+    const { error: profileError } = await supabase
+      .from('users')
+      .insert({
+        id: sbUser.id,
+        email: sbUser.email,
+        full_name: fullName || null,
+        plan: 'free',
+        queries_used: 0,
+        queries_limit: 10,
+        tipo_usuario: 'cliente',
+        colegiatura: '',
+        legal_areas: [],
+        credential_issued_at: null,
+        credential_expires_at: null,
+      });
+    if (profileError) console.error('Error creating Google user profile:', profileError);
+  }
+
+  const user = await attachFirmInfo({
+    id: sbUser.id,
+    email: sbUser.email,
+    full_name: fullName,
+    plan,
+    queries_used,
+    queries_limit,
+    tipo_usuario,
+    colegiatura,
+    legal_areas,
+    credential_issued_at,
+    credential_expires_at,
+  } as AuthUser);
+
+  return {
+    user,
+    session: data.session,
+    redirectTo: redirectTo || '/chat',
+  };
+}
+
 export async function signOut() {
   if (isSupabaseConfigured()) {
     const supabase = getSupabase();
@@ -254,25 +345,54 @@ export async function getCurrentUser(cookieHeader?: string | null) {
   if (isSupabaseConfigured()) {
     const supabase = getSupabase();
     const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) return null;
-    const profile = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    return await attachFirmInfo({
-      id: user.id,
-      email: user.email!,
-      full_name: profile.data?.full_name || user.user_metadata?.full_name,
-      plan: profile.data?.plan || 'free',
-      queries_used: profile.data?.queries_used || 0,
-      queries_limit: profile.data?.queries_limit || 10,
-      tipo_usuario: profile.data?.tipo_usuario || 'cliente',
-      colegiatura: profile.data?.colegiatura || '',
-      legal_areas: profile.data?.legal_areas || [],
-      credential_issued_at: profile.data?.credential_issued_at || null,
-      credential_expires_at: profile.data?.credential_expires_at || null,
-    } as AuthUser);
+    if (!error && user) {
+      const profile = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+      return await attachFirmInfo({
+        id: user.id,
+        email: user.email!,
+        full_name: profile.data?.full_name || user.user_metadata?.full_name,
+        plan: profile.data?.plan || 'free',
+        queries_used: profile.data?.queries_used || 0,
+        queries_limit: profile.data?.queries_limit || 10,
+        tipo_usuario: profile.data?.tipo_usuario || 'cliente',
+        colegiatura: profile.data?.colegiatura || '',
+        legal_areas: profile.data?.legal_areas || [],
+        credential_issued_at: profile.data?.credential_issued_at || null,
+        credential_expires_at: profile.data?.credential_expires_at || null,
+      } as AuthUser);
+    }
+
+    // Fallback: sesión iniciada vía Google OAuth (cookie demo set por /auth/callback)
+    const email = cookieHeader
+      ? getDemoEmailFromCookieHeader(cookieHeader)
+      : getDemoEmailFromCookie();
+    if (email) {
+      const { data: byEmail } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle();
+      if (byEmail) {
+        return await attachFirmInfo({
+          id: byEmail.id,
+          email: byEmail.email,
+          full_name: byEmail.full_name,
+          plan: byEmail.plan || 'free',
+          queries_used: byEmail.queries_used || 0,
+          queries_limit: byEmail.queries_limit || 10,
+          tipo_usuario: byEmail.tipo_usuario || 'cliente',
+          colegiatura: byEmail.colegiatura || '',
+          legal_areas: byEmail.legal_areas || [],
+          credential_issued_at: byEmail.credential_issued_at || null,
+          credential_expires_at: byEmail.credential_expires_at || null,
+        } as AuthUser);
+      }
+    }
+    return null;
   }
 
   // Demo mode: read from cookie

@@ -1,8 +1,7 @@
 import { MetadataRoute } from 'next';
+import { SITE_URL } from '@/lib/site';
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://jurisnexa.ai';
-
   return {
     rules: [
       {
@@ -11,6 +10,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/admin/', '/historial/', '/documentos/', '/perfil/'],
       },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }
