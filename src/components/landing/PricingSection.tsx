@@ -3,9 +3,10 @@ const plans = [
     name: "Free",
     price: "$0",
     period: "para siempre",
-    description: "Perfecto para probar la plataforma",
+    description: "Para probar la plataforma. Sin tarjeta de crédito",
     features: [
-      "10 consultas mensuales",
+      "10 consultas por mes",
+      "Corpus chileno verificable con fuentes [n]",
       "Acceso a legislación básica",
       "Soporte por email",
       "Perú y Chile"
@@ -118,6 +119,16 @@ export function PricingSection() {
             <a href="/contacto" className="text-emerald-400 hover:text-emerald-300">
               Contáctanos
             </a>
+          </p>
+        </div>
+
+        <div className="mt-8 max-w-3xl mx-auto bg-zinc-800/40 border border-zinc-700 rounded-xl p-6">
+          <h3 className="text-sm font-semibold text-white mb-2">Sobre el plan gratuito</h3>
+          <p className="text-sm text-zinc-400">
+            El plan Free mantiene un límite de consultas mensuales para garantizar la
+            calidad del corpus y un uso responsable. El plan Pro y Professional amplían
+            ese límite, no lo eliminan por completo, para que el servicio siga siendo
+            sostenible y preciso. Si superas tu límite, te avisamos antes de responder.
           </p>
         </div>
       </div>
