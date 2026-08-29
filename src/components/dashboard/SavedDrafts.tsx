@@ -112,10 +112,10 @@ export default function SavedDrafts() {
     }
   };
 
-  const handleDownloadPDF = (draft: Draft) => {
+  const handleDownloadPDF = async (draft: Draft) => {
     const content = draft.content || '';
     const filename = `jurisnexa-${draft.document_type}-${new Date().toISOString().split('T')[0]}.pdf`;
-    downloadPDF(content, filename);
+    await downloadPDF(content, filename);
   };
 
   if (loading) {

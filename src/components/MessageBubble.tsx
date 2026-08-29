@@ -22,11 +22,11 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
     message.content.includes('FUNDAMENTOS DE DERECHO')
   );
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     setIsDownloading(true);
     try {
       const filename = `jurisnexa-${new Date().toISOString().split('T')[0]}.pdf`;
-      downloadPDF(message.content, filename);
+      await downloadPDF(message.content, filename);
     } catch (err) {
       console.error('Error generating PDF:', err);
     } finally {

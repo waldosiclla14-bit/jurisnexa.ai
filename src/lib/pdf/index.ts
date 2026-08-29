@@ -1,6 +1,5 @@
-import { jsPDF } from 'jspdf';
-
-export function generateDocumentPDF(content: string, filename: string): Blob {
+export async function generateDocumentPDF(content: string, filename: string): Promise<Blob> {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -130,8 +129,8 @@ export function generateDocumentPDF(content: string, filename: string): Blob {
   return doc.output('blob');
 }
 
-export function downloadPDF(content: string, filename: string) {
-  const blob = generateDocumentPDF(content, filename);
+export async function downloadPDF(content: string, filename: string) {
+  const blob = await generateDocumentPDF(content, filename);
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
