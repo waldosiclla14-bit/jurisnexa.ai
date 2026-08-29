@@ -123,4 +123,32 @@ describe('MessageBubble — legibilidad del markdown', () => {
     expect(document.querySelectorAll('table').length).toBe(0);
     expect(screen.getByText(/plazo según/)).toBeInTheDocument();
   });
+
+  it('separa el divisor pegado al encabezado ---### Título', () => {
+    render(
+      <MessageBubble
+        message={{
+          ...message,
+          content: 'Introducción\n---### Análisis jurídico\nTexto',
+        }}
+      />
+    );
+    expect(document.querySelectorAll('hr').length).toBe(1);
+    expect(screen.queryByText('---### Análisis jurídico')).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3 }).textContent).toContain('Análisis jurídico');
+  });
+
+  it('separa encabezados pegados al final de un párrafo', () => {
+    render(
+      <MessageBubble
+        message={{
+          ...message,
+          content: 'Texto de cierre del párrafo## Conclusión\nDetalle.',
+        }}
+      />
+    );
+    const h2s = document.querySelectorAll('h2');
+    expect(h2s.length).toBe(1);
+    expect(h2s[0].textContent).toContain('Conclusión');
+  });
 });

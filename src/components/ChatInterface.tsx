@@ -11,6 +11,7 @@ import NormValidator from './NormValidator';
 import SentenciaAnalyzer from './SentenciaAnalyzer';
 import { DocumentType } from '@/lib/prompts/drafting';
 import { useAuth } from './auth/AuthProvider';
+import { createStreamAccumulator } from '@/lib/streaming';
 
 interface ChatInterfaceProps {
   country: Country;
@@ -152,7 +153,6 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
 
       const decoder = new TextDecoder();
       let fullContent = '';
-      let streamBuffer = '';
       let updatePending = false;
       let streamSources: { title: string; url: string | null; similarity: number }[] = [];
 
@@ -165,32 +165,32 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
         );
       };
 
+      const accumulator = createStreamAccumulator((line) => {
+        if (line.startsWith('__META__')) {
+          try {
+            const meta = JSON.parse(line.slice(8));
+            if (meta.conversationId) setConversationId(meta.conversationId);
+          } catch { /* ignore */ }
+          return;
+        }
+        if (line.startsWith('__SOURCES__')) {
+          try { streamSources = JSON.parse(line.slice(11)).sources || []; } catch { /* ignore */ }
+          return;
+        }
+        if (line.startsWith('__ERROR__')) throw new Error(line.slice(9));
+        fullContent += line + '\n';
+        if (!updatePending) {
+          updatePending = true;
+          setTimeout(flushUpdate, 50);
+        }
+      });
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        streamBuffer += decoder.decode(value, { stream: true });
-        const lines = streamBuffer.split('\n');
-        streamBuffer = lines.pop() ?? '';
-        for (const line of lines) {
-          if (line.startsWith('__META__')) {
-            try {
-              const meta = JSON.parse(line.slice(8));
-              if (meta.conversationId) setConversationId(meta.conversationId);
-            } catch { /* ignore */ }
-            continue;
-          }
-          if (line.startsWith('__SOURCES__')) {
-            try { streamSources = JSON.parse(line.slice(11)).sources || []; } catch { /* ignore */ }
-            continue;
-          }
-          if (line.startsWith('__ERROR__')) throw new Error(line.slice(9));
-          fullContent += line + '\n';
-          if (!updatePending) {
-            updatePending = true;
-            setTimeout(flushUpdate, 50);
-          }
-        }
+        accumulator.push(decoder.decode(value, { stream: true }));
       }
+      accumulator.flush();
       if (updatePending) flushUpdate();
 
       setMessages((prev) =>
@@ -268,7 +268,6 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
 
       const decoder = new TextDecoder();
       let fullContent = '';
-      let streamBuffer = '';
       let updatePending = false;
       let streamSources: { title: string; url: string | null; similarity: number }[] = [];
 
@@ -283,38 +282,36 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
         );
       };
 
+      const accumulator = createStreamAccumulator((line) => {
+        if (line.startsWith('__META__')) {
+          try {
+            const meta = JSON.parse(line.slice(8));
+            if (meta.conversationId) {
+              setConversationId(meta.conversationId);
+            }
+          } catch { /* ignore parse errors */ }
+          return;
+        }
+        if (line.startsWith('__SOURCES__')) {
+          try { streamSources = JSON.parse(line.slice(11)).sources || []; } catch { /* ignore */ }
+          return;
+        }
+        if (line.startsWith('__ERROR__')) {
+          throw new Error(line.slice(9));
+        }
+        fullContent += line + '\n';
+        if (!updatePending) {
+          updatePending = true;
+          setTimeout(flushUpdate, 50);
+        }
+      });
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
-        streamBuffer += decoder.decode(value, { stream: true });
-        const lines = streamBuffer.split('\n');
-        streamBuffer = lines.pop() ?? '';
-
-        for (const line of lines) {
-          if (line.startsWith('__META__')) {
-            try {
-              const meta = JSON.parse(line.slice(8));
-              if (meta.conversationId) {
-                setConversationId(meta.conversationId);
-              }
-            } catch { /* ignore parse errors */ }
-            continue;
-          }
-          if (line.startsWith('__SOURCES__')) {
-            try { streamSources = JSON.parse(line.slice(11)).sources || []; } catch { /* ignore */ }
-            continue;
-          }
-          if (line.startsWith('__ERROR__')) {
-            throw new Error(line.slice(9));
-          }
-          fullContent += line + '\n';
-          if (!updatePending) {
-            updatePending = true;
-            setTimeout(flushUpdate, 50);
-          }
-        }
+        accumulator.push(decoder.decode(value, { stream: true }));
       }
+      accumulator.flush();
       if (updatePending) flushUpdate();
 
       setMessages((prev) =>
@@ -425,34 +422,38 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
 
       const decoder = new TextDecoder();
       let fullContent = '';
-      let streamBuffer = '';
       let streamSources: { title: string; url: string | null; similarity: number }[] = [];
+
+      const flushUpdate = () => {
+        setMessages(prev =>
+          prev.map(m => m.id === assistantMessageId ? { ...m, content: fullContent, ...(streamSources.length > 0 ? { metadata: { ...m.metadata, sources: streamSources } } : {}) } : m)
+        );
+      };
+
+      const accumulator = createStreamAccumulator((line) => {
+        if (line.startsWith('__META__')) {
+          try {
+            const meta = JSON.parse(line.slice(8));
+            if (meta.conversationId) setConversationId(meta.conversationId);
+          } catch { /* ignore */ }
+          return;
+        }
+        if (line.startsWith('__SOURCES__')) {
+          try { streamSources = JSON.parse(line.slice(11)).sources || []; } catch { /* ignore */ }
+          return;
+        }
+        if (line.startsWith('__ERROR__')) throw new Error(line.slice(9));
+        fullContent += line + '\n';
+        flushUpdate();
+      });
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        streamBuffer += decoder.decode(value, { stream: true });
-        const lines = streamBuffer.split('\n');
-        streamBuffer = lines.pop() ?? '';
-        for (const line of lines) {
-          if (line.startsWith('__META__')) {
-            try {
-              const meta = JSON.parse(line.slice(8));
-              if (meta.conversationId) setConversationId(meta.conversationId);
-            } catch { /* ignore */ }
-            continue;
-          }
-          if (line.startsWith('__SOURCES__')) {
-            try { streamSources = JSON.parse(line.slice(11)).sources || []; } catch { /* ignore */ }
-            continue;
-          }
-          if (line.startsWith('__ERROR__')) throw new Error(line.slice(9));
-          fullContent += line + '\n';
-        }
-        setMessages(prev =>
-          prev.map(m => m.id === assistantMessageId ? { ...m, content: fullContent, ...(streamSources.length > 0 ? { metadata: { ...m.metadata, sources: streamSources } } : {}) } : m)
-        );
+        accumulator.push(decoder.decode(value, { stream: true }));
       }
+      accumulator.flush();
+      flushUpdate();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       setMessages(prev =>
@@ -508,28 +509,32 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
 
       const decoder = new TextDecoder();
       let fullContent = '';
-      let streamBuffer = '';
       let streamSources: { title: string; url: string | null; similarity: number }[] = [];
+
+      const flushUpdate = () => {
+        setMessages(prev =>
+          prev.map(m => m.id === assistantMessageId ? { ...m, content: fullContent, ...(streamSources.length > 0 ? { metadata: { ...m.metadata, sources: streamSources } } : {}) } : m)
+        );
+      };
+
+      const accumulator = createStreamAccumulator((line) => {
+        if (line.startsWith('__META__')) return;
+        if (line.startsWith('__SOURCES__')) {
+          try { streamSources = JSON.parse(line.slice(11)).sources || []; } catch { /* ignore */ }
+          return;
+        }
+        if (line.startsWith('__ERROR__')) throw new Error(line.slice(9));
+        fullContent += line + '\n';
+        flushUpdate();
+      });
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        streamBuffer += decoder.decode(value, { stream: true });
-        const lines = streamBuffer.split('\n');
-        streamBuffer = lines.pop() ?? '';
-        for (const line of lines) {
-          if (line.startsWith('__META__')) continue;
-          if (line.startsWith('__SOURCES__')) {
-            try { streamSources = JSON.parse(line.slice(11)).sources || []; } catch { /* ignore */ }
-            continue;
-          }
-          if (line.startsWith('__ERROR__')) throw new Error(line.slice(9));
-          fullContent += line + '\n';
-        }
-        setMessages(prev =>
-          prev.map(m => m.id === assistantMessageId ? { ...m, content: fullContent, ...(streamSources.length > 0 ? { metadata: { ...m.metadata, sources: streamSources } } : {}) } : m)
-        );
+        accumulator.push(decoder.decode(value, { stream: true }));
       }
+      accumulator.flush();
+      flushUpdate();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       setMessages(prev =>

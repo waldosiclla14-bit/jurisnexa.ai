@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Country, LegalArea } from '@/types';
 import { DocumentType, DOCUMENT_TYPES } from '@/lib/prompts/drafting';
+import { createStreamAccumulator } from '@/lib/streaming';
 
 interface DocumentDraftingProps {
   country: Country;
@@ -66,20 +67,19 @@ export default function DocumentDrafting({
 
       const decoder = new TextDecoder();
       let fullContent = '';
-      let streamBuffer = '';
+
+      const accumulator = createStreamAccumulator((line) => {
+        if (line.startsWith('__META__')) return;
+        if (line.startsWith('__ERROR__')) throw new Error(line.slice(9));
+        fullContent += line + '\n';
+      });
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        streamBuffer += decoder.decode(value, { stream: true });
-        const lines = streamBuffer.split('\n');
-        streamBuffer = lines.pop() ?? '';
-        for (const line of lines) {
-          if (line.startsWith('__META__')) continue;
-          if (line.startsWith('__ERROR__')) throw new Error(line.slice(9));
-          fullContent += line + '\n';
-        }
+        accumulator.push(decoder.decode(value, { stream: true }));
       }
+      accumulator.flush();
 
       onDraftGenerated(fullContent, selectedType);
       onClose();

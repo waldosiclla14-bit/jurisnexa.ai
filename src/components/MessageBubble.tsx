@@ -202,9 +202,26 @@ interface ChatSource {
   similarity?: number;
 }
 
+/**
+ * Normaliza el contenido para recuperar saltos de línea que el streaming o el
+ * modelo hayan pegado: '-' o '*' separadores pegados a encabezados (---###),
+ * encabezados pegados al texto previo, y listas pegadas a la línea anterior.
+ */
+function normalizeMarkdownLines(content: string): string[] {
+  let text = content;
+
+  // ---### Título  →  ---\n### Título   (y variantes * o _)
+  text = text.replace(/(-{3,}|\*{3,}|_{3,})\s*(#{1,6})\s+/g, '$1\n$2 ');
+
+  // ...## Título  →  ...\n## Título   (encabezado pegado al final de un párrafo)
+  text = text.replace(/([^\n#])\s*(#{1,6}\s+)/g, '$1\n$2');
+
+  return text.split('\n');
+}
+
 function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSource[] | undefined }) {
   // Simple markdown parser for legal responses
-  const lines = content.split('\n');
+  const lines = normalizeMarkdownLines(content);
   const elements: React.ReactNode[] = [];
 
   let inTable = false;
