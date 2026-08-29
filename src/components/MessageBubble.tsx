@@ -242,28 +242,36 @@ function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSo
   const renderLine = (line: string): boolean => {
     const trimmed = line.trim();
 
-    // Headers
-    if (trimmed.startsWith('### ')) {
+    // Headers (toleran negrita pegada: ##**Título** o ### Texto)
+    const headerMatch = trimmed.match(/^(#{1,6})\s*(.+)$/);
+    if (headerMatch) {
       flushList();
-      elements.push(
-        <h3 key={key++} className="mt-6 mb-2 text-sm font-bold text-emerald-400 uppercase tracking-wide">
-          <ParsedInline text={trimmed.slice(4)} sources={sources} />
-        </h3>
-      );
-    } else if (trimmed.startsWith('## ')) {
+      const level = headerMatch[1].length;
+      const headerText = headerMatch[2].replace(/\*\*/, '').replace(/\*\*$/, '').trim();
+      if (level >= 3) {
+        elements.push(
+          <h3 key={key++} className="mt-6 mb-2 text-sm font-bold text-emerald-400 uppercase tracking-wide">
+            <ParsedInline text={headerText} sources={sources} />
+          </h3>
+        );
+      } else if (level === 2) {
+        elements.push(
+          <h2 key={key++} className="mt-7 mb-3 text-base font-bold text-white">
+            <ParsedInline text={headerText} sources={sources} />
+          </h2>
+        );
+      } else {
+        elements.push(
+          <h1 key={key++} className="mt-7 mb-3 text-lg font-bold text-white">
+            <ParsedInline text={headerText} sources={sources} />
+          </h1>
+        );
+      }
+    }
+    // Horizontal rule
+    else if (/^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
       flushList();
-      elements.push(
-        <h2 key={key++} className="mt-7 mb-3 text-base font-bold text-white">
-          <ParsedInline text={trimmed.slice(3)} sources={sources} />
-        </h2>
-      );
-    } else if (trimmed.startsWith('# ')) {
-      flushList();
-      elements.push(
-        <h1 key={key++} className="mt-7 mb-3 text-lg font-bold text-white">
-          <ParsedInline text={trimmed.slice(2)} sources={sources} />
-        </h1>
-      );
+      elements.push(<hr key={key++} className="my-4 border-zinc-800" />);
     }
     // Bold lines
     else if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
@@ -321,8 +329,9 @@ function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSo
     const line = lines[i];
     const trimmed = line.trim();
 
-    // Table detection
-    if (trimmed.includes('|') && trimmed.startsWith('|')) {
+    // Table detection (tolera tablas sin pipe inicial si tienen al menos 3 columnas)
+    const isTableRow = trimmed.includes('|') && (trimmed.startsWith('|') || trimmed.split('|').filter(c => c.trim()).length >= 3);
+    if (isTableRow) {
       if (trimmed.replace(/[|\-\s]/g, '').length === 0) {
         // Separator row, skip
         continue;

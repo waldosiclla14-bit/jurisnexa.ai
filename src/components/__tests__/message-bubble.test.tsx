@@ -69,4 +69,58 @@ describe('MessageBubble — legibilidad del markdown', () => {
     render(<MessageBubble message={message} />);
     expect(screen.getAllByText(/[1]/).length).toBeGreaterThan(0);
   });
+
+  it('renderiza divisores --- como <hr> en vez de párrafo', () => {
+    render(
+      <MessageBubble
+        message={{
+          ...message,
+          content: 'Texto antes\n\n---\n\nTexto después',
+        }}
+      />
+    );
+    expect(document.querySelectorAll('hr').length).toBe(1);
+    expect(screen.queryByText('---')).not.toBeInTheDocument();
+  });
+
+  it('detecta el encabezado con negrita pegada ##**Título**', () => {
+    render(
+      <MessageBubble
+        message={{
+          ...message,
+          content: '##**Resumen de tu caso**\n\nTexto del cuerpo.',
+        }}
+      />
+    );
+    const h2s = document.querySelectorAll('h2');
+    expect(h2s.length).toBe(1);
+    expect(h2s[0].textContent).toContain('Resumen de tu caso');
+  });
+
+  it('renderiza una tabla sin pipe inicial', () => {
+    render(
+      <MessageBubble
+        message={{
+          ...message,
+          content: 'Plazo | Fuente | Observación\n1 año | CP 457 | Vigente\n2 años | CP 458 | Derogado',
+        }}
+      />
+    );
+    const tables = document.querySelectorAll('table');
+    expect(tables.length).toBe(1);
+    expect(tables[0].querySelectorAll('tr').length).toBe(3);
+  });
+
+  it('no confunde un texto con un solo | con una tabla', () => {
+    render(
+      <MessageBubble
+        message={{
+          ...message,
+          content: 'El plazo según el art. 1 | el art. 2 no está claro.',
+        }}
+      />
+    );
+    expect(document.querySelectorAll('table').length).toBe(0);
+    expect(screen.getByText(/plazo según/)).toBeInTheDocument();
+  });
 });
