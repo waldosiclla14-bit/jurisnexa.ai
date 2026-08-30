@@ -97,16 +97,16 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       )}
 
       <div
-        className={`max-w-[85%] rounded-2xl px-4 py-3 ${
+        className={`rounded-2xl px-3.5 py-3.5 sm:px-5 sm:py-4 ${
           isUser
-            ? 'bg-emerald-600 text-white'
-            : 'border border-zinc-800 bg-zinc-900/80 text-zinc-200'
+            ? 'max-w-[88%] sm:max-w-[75%] bg-emerald-600 text-white'
+            : 'max-w-[96%] sm:max-w-[88%] border border-zinc-800 bg-zinc-900 text-zinc-100 shadow-sm'
         }`}
       >
         {isUser ? (
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+          <p className="whitespace-pre-wrap text-[14px] leading-[1.65] sm:text-[15px]">{message.content}</p>
         ) : (
-          <div className="prose prose-invert prose-sm max-w-none">
+          <div className="max-w-none">
             <LegalMarkdown content={message.content} sources={message.metadata?.sources as ChatSource[] | undefined} />
           </div>
         )}
@@ -233,13 +233,13 @@ function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSo
     if (!listBuffer) return;
     if (listBuffer.type === 'ul') {
       elements.push(
-        <ul key={key++} className="my-3 ml-1 flex flex-col gap-1.5 pl-4" style={{ listStyleType: 'disc' }}>
+        <ul key={key++} className="my-3 flex list-disc flex-col gap-2 pl-5 sm:pl-6 marker:text-zinc-500">
           {listBuffer.items}
         </ul>
       );
     } else {
       elements.push(
-        <ol key={key++} className="my-3 ml-1 flex flex-col gap-1.5 pl-4" style={{ listStyleType: 'decimal' }}>
+        <ol key={key++} className="my-3 flex list-decimal flex-col gap-2 pl-5 sm:pl-6 marker:text-zinc-500 marker:font-medium">
           {listBuffer.items}
         </ol>
       );
@@ -267,19 +267,19 @@ function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSo
       const headerText = headerMatch[2].replace(/\*\*/, '').replace(/\*\*$/, '').trim();
       if (level >= 3) {
         elements.push(
-          <h3 key={key++} className="mt-6 mb-2 text-sm font-bold text-emerald-400 uppercase tracking-wide">
+          <h3 key={key++} className="mb-2.5 mt-6 text-[13px] font-bold uppercase tracking-wider text-emerald-400 sm:text-sm">
             <ParsedInline text={headerText} sources={sources} />
           </h3>
         );
       } else if (level === 2) {
         elements.push(
-          <h2 key={key++} className="mt-7 mb-3 text-base font-bold text-white">
+          <h2 key={key++} className="mb-3 mt-6 border-b border-zinc-800 pb-2 text-[16px] font-bold leading-snug text-white sm:text-[17px]">
             <ParsedInline text={headerText} sources={sources} />
           </h2>
         );
       } else {
         elements.push(
-          <h1 key={key++} className="mt-7 mb-3 text-lg font-bold text-white">
+          <h1 key={key++} className="mb-4 mt-7 border-b border-zinc-800 pb-2.5 text-[19px] font-bold leading-tight text-white sm:text-[20px]">
             <ParsedInline text={headerText} sources={sources} />
           </h1>
         );
@@ -294,7 +294,7 @@ function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSo
     else if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
       flushList();
       elements.push(
-        <p key={key++} className="mt-5 mb-1.5 text-sm font-bold text-white">
+        <p key={key++} className="mb-1.5 mt-5 text-[14.5px] font-bold leading-snug text-white sm:text-[15px]">
           <ParsedInline text={trimmed.slice(2, -2)} sources={sources} />
         </p>
       );
@@ -303,7 +303,7 @@ function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSo
     else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
       const text = trimmed.slice(2);
       pushListItem('ul', (
-        <li key={key++} className="text-sm leading-relaxed text-zinc-300">
+        <li key={key++} className="text-[14.5px] leading-[1.7] text-zinc-200 sm:text-[15px]">
           <ParsedInline text={text} sources={sources} />
         </li>
       ));
@@ -312,7 +312,7 @@ function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSo
     else if (/^\d+\.\s/.test(trimmed)) {
       const text = trimmed.replace(/^\d+\.\s/, '');
       pushListItem('ol', (
-        <li key={key++} className="text-sm leading-relaxed text-zinc-300">
+        <li key={key++} className="text-[14.5px] leading-[1.7] text-zinc-200 sm:text-[15px]">
           <ParsedInline text={text} sources={sources} />
         </li>
       ));
@@ -321,8 +321,8 @@ function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSo
     else if (line.includes('NO ENCONTRÉ UNA FUENTE') || line.includes('Advertencia') || line.includes('⚠')) {
       flushList();
       elements.push(
-        <div key={key++} className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
-          <p className="text-sm text-amber-300">
+        <div key={key++} className="mt-4 rounded-xl border border-amber-500/25 bg-amber-500/[0.06] p-3 sm:p-3.5">
+          <p className="text-[13.5px] leading-[1.65] text-amber-200/90 sm:text-[14px]">
             <ParsedInline text={line} sources={sources} />
           </p>
         </div>
@@ -332,7 +332,7 @@ function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSo
     else if (trimmed !== '') {
       flushList();
       elements.push(
-        <p key={key++} className="my-2 text-sm leading-relaxed text-zinc-300">
+        <p key={key++} className="my-3 text-[14.5px] leading-[1.75] text-zinc-100 sm:text-[15px]">
           <ParsedInline text={line} sources={sources} />
         </p>
       );
@@ -460,12 +460,12 @@ function renderTable(rows: string[][], key: number) {
   const body = rows.slice(1);
 
   return (
-    <div key={key} className="my-3 overflow-x-auto rounded-lg border border-zinc-800">
-      <table className="w-full text-xs">
+    <div key={key} className="-mx-1 my-4 overflow-x-auto rounded-xl border border-zinc-800 sm:mx-0">
+      <table className="min-w-[520px] w-full text-[13px] sm:text-sm">
         <thead>
-          <tr className="border-b border-zinc-800 bg-zinc-900/50">
+          <tr className="border-b border-zinc-800 bg-zinc-800/40">
             {headers.map((h, i) => (
-              <th key={i} className="px-3 py-2 text-left font-semibold text-emerald-400">
+              <th key={i} className="px-3 py-2.5 text-left text-[12px] font-semibold uppercase tracking-wide text-emerald-400 sm:px-4 sm:text-xs">
                 {h}
               </th>
             ))}
@@ -473,9 +473,9 @@ function renderTable(rows: string[][], key: number) {
         </thead>
         <tbody>
           {body.map((row, ri) => (
-            <tr key={ri} className="border-b border-zinc-800/50 last:border-0">
+            <tr key={ri} className="border-b border-zinc-800/40 last:border-0 odd:bg-zinc-900/40">
               {row.map((cell, ci) => (
-                <td key={ci} className="px-3 py-2 text-zinc-300">
+                <td key={ci} className="px-3 py-2.5 leading-[1.6] text-zinc-200 sm:px-4">
                   {cell}
                 </td>
               ))}
@@ -507,14 +507,14 @@ function SourcesBlock({ sources }: { sources: ChatSource[] | undefined }) {
   if (!sources || sources.length === 0) return null;
   const displaySources = sources.slice(0, 8);
   return (
-    <div className="mt-3 rounded-lg border border-zinc-800 bg-zinc-950/50 p-3">
-      <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">Fuentes consultadas ({sources.length} total)</p>
-      <div className="flex flex-col gap-1.5">
+    <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-950 p-3 sm:p-4">
+      <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Fuentes consultadas · {sources.length}</p>
+      <div className="flex flex-col gap-2">
         {displaySources.map((src, i) => (
-          <div key={i} className="flex items-start gap-2 text-xs text-zinc-400">
-            <span className="mt-px flex-shrink-0 text-[10px] font-bold text-emerald-400">[{i + 1}]</span>
+          <div key={i} className="flex items-start gap-2.5 text-[13px] leading-[1.5] text-zinc-400 sm:text-sm">
+            <span className="mt-0.5 flex-shrink-0 rounded bg-zinc-800 px-1 py-0.5 text-[10px] font-bold leading-none text-emerald-400">[{i + 1}]</span>
             {src.url ? (
-              <a href={src.url} target="_blank" rel="noopener noreferrer" className="hover:text-emerald-400 transition-colors">{src.title}</a>
+              <a href={src.url} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-emerald-400 hover:underline">{src.title}</a>
             ) : (
               <span>{src.title}</span>
             )}

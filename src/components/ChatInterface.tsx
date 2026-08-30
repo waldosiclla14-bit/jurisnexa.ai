@@ -717,7 +717,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
             </div>
           </div>
         ) : (
-          <div className="mx-auto max-w-3xl space-y-4 px-4 py-6">
+          <div className="mx-auto w-full max-w-[720px] space-y-5 px-3 py-6 sm:max-w-3xl sm:px-4">
             {messages.map((message) => (
               <MessageBubble key={message.id} message={message} />
             ))}
@@ -744,8 +744,8 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
       </div>
 
       {/* Input area */}
-      <div className="border-t border-zinc-800 bg-zinc-950/90 backdrop-blur-xl">
-        <div className="mx-auto max-w-3xl px-4 py-4">
+      <div className="border-t border-zinc-800 bg-zinc-950/90 backdrop-blur-xl supports-[backdrop-filter]:bg-zinc-950/80">
+        <div className="mx-auto w-full max-w-[720px] px-3 py-3 sm:max-w-3xl sm:px-4 sm:py-4">
           {/* Quick area selector when messages exist */}
           {messages.length > 0 && (
             <div className="mb-3 flex items-center gap-2 overflow-x-auto pb-1">
