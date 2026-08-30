@@ -60,13 +60,27 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'LegalService',
+  name: 'JurisNexa.ai',
+  url: SITE_URL,
+  description: 'Asistente jurídico IA especializado en legislación de Perú y Chile',
+  areaServed: [{ '@type': 'Country', name: 'Peru' }, { '@type': 'Country', name: 'Chile' }],
+  availableLanguage: ['es-PE', 'es-CL'],
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es" className={`${inter.variable} h-full`} suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </head>
       <body className="min-h-full bg-zinc-950 text-white antialiased">
+        <a href="#main-content" className="sr-only left-2 top-2 z-[100] rounded bg-white px-3 py-2 text-sm text-black focus:not-sr-only focus:absolute">
+          Saltar al contenido principal
+        </a>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

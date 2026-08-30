@@ -559,7 +559,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
   }
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div id="main-content" className="flex flex-1 flex-col">
       {/* Document Drafting Modal */}
       {showDocumentDrafting && (
         <DocumentDrafting
@@ -593,7 +593,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
         />
       )}
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overscroll-contain" role="log" aria-live="polite" aria-relevant="additions" aria-label="Historial de conversación">
         {isEmpty ? (
           <div className="flex h-full flex-col items-center justify-center px-4 py-12">
             <div className="mx-auto max-w-2xl space-y-8">
@@ -825,7 +825,9 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
 
           <form onSubmit={handleSubmit} className="flex gap-3">
             <div className="relative flex-1">
+              <label htmlFor="chat-input" className="sr-only">Consulta jurídica</label>
               <textarea
+                id="chat-input"
                 ref={inputRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -833,7 +835,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
                 placeholder="Escribe tu consulta jurídica..."
                 rows={1}
                 aria-label="Consulta jurídica"
-                className="w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 pr-12 text-sm text-white placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30"
+                className="w-full resize-none rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 pr-12 text-sm text-white placeholder-zinc-600 outline-none transition-all focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 focus-visible:ring-2"
                 style={{ minHeight: '48px', maxHeight: '120px' }}
                 onInput={(e) => {
                   const target = e.target as HTMLTextAreaElement;
@@ -851,7 +853,11 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
             />
             <label
               htmlFor="chat-file-upload"
-              className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-400 transition-all hover:border-emerald-500/40 hover:text-emerald-400 cursor-pointer"
+              tabIndex={0}
+              role="button"
+              aria-label="Adjuntar archivo PDF o imagen"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById('chat-file-upload')?.click(); } }}
+              className="flex h-12 w-12 flex-shrink-0 cursor-pointer items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-400 transition-all hover:border-emerald-500/40 hover:text-emerald-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
               title="Subir archivo"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -862,7 +868,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
               type="submit"
               disabled={!input.trim() || isLoading}
               aria-label="Enviar mensaje"
-              className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white transition-all hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white transition-all hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {isLoading ? (
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="animate-spin">
@@ -898,7 +904,7 @@ function ActionButton({
   return (
     <button
       onClick={onClick}
-      className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-2.5 text-sm text-zinc-400 transition-all hover:border-emerald-500/40 hover:bg-emerald-500/5 hover:text-zinc-200"
+      className="flex items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-900/50 px-4 py-2.5 text-sm text-zinc-400 transition-all hover:border-emerald-500/40 hover:bg-emerald-500/5 hover:text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40"
     >
       {icon}
       <span>{label}</span>
