@@ -97,6 +97,7 @@ const PRIORITY_LAWS: Record<string, string> = {
   'estafa': 'CL-1984',
   'consumidor': 'CL-1160403',
   'defensa': 'CL-1160403',
+  'garantía': 'CL-1160403',
   'tributario': 'CL-6374',
   'impuesto': 'CL-6374',
   'iva': 'CL-6374',

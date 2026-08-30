@@ -1,0 +1,182 @@
+{
+  "$schema": "./schema.draft",
+  "$comment": "Eval set jurídico JurisNexa.ai — Perú (PE) y Chile (CL). expected_references son leyes que la respuesta debe citar (recuperación o mención). expected_points son conceptos que debe contener. forbidden son afirmaciones que NO debe hacer (anti-alucinación).",
+  "scenarios": [
+    {
+      "id": "PE-LAB-01",
+      "country": "PERU",
+      "legal_area": "laboral",
+      "mode": "cliente",
+      "title": "Despido arbitrario sin causa",
+      "query": "Me despidieron de mi trabajo sin ninguna causa. Llevo 4 años en la empresa y he trabajado bien. ¿Qué derechos tengo y qué puedo reclamar?",
+      "expected_references": ["Constitución Política del Perú", "D.S. 003-97-TR", "D.L. 728"],
+      "expected_points": ["despido arbitrario", "indemnización"],
+      "forbidden": ["violencia", "carcél"]
+    },
+    {
+      "id": "PE-PEN-01",
+      "country": "PERU",
+      "legal_area": "penal",
+      "mode": "cliente",
+      "title": "Usurpación de inmueble",
+      "query": "Un vecino ingresó a un terreno desocupado que es de mi familia con un candado nuevo y dice que ya es suyo. ¿Qué delito es eso y qué puedo hacer?",
+      "expected_references": ["Código Penal de 1991", "D.L. 635"],
+      "expected_points": ["usurpación", "despojo"],
+      "forbidden": ["propina", "cohecho"]
+    },
+    {
+      "id": "PE-CIV-01",
+      "country": "PERU",
+      "legal_area": "inmobiliario",
+      "mode": "cliente",
+      "title": "Ocupación parcial de terreno",
+      "query": "Mi vecino levantó una pared sobre parte de mi terreno sin mi permiso. ¿Puedo recuperar mi terreno? ¿Qué acción tengo?",
+      "expected_references": ["Código Penal de 1991", "Código Civil de 1984"],
+      "expected_points": ["reivindicatoria", "usurpación", "propiedad"],
+      "forbidden": ["homicidio", "secuestro"]
+    },
+    {
+      "id": "PE-FAM-01",
+      "country": "PERU",
+      "legal_area": "familia",
+      "mode": "cliente",
+      "title": "Divorcio por separación de hecho",
+      "query": "Hace 3 años que vivo separada de mi esposo. Quiero divorciarme y repartir los bienes de la casa. ¿Cómo hago si él no está de acuerdo?",
+      "expected_references": ["Código Civil de 1984"],
+      "expected_points": ["divorcio", "separación de hecho", "bienes"],
+      "forbidden": ["adulterio"]
+    },
+    {
+      "id": "PE-FAM-02",
+      "country": "PERU",
+      "legal_area": "familia",
+      "mode": "cliente",
+      "title": "Pensión de alimentos",
+      "query": "El padre de mi hijo no quiere pagar la pensión de alimentos. ¿Cómo la reclamo y cuánto le corresponde pagar?",
+      "expected_references": ["Código Civil de 1984", "Código de los Niños y Adolescentes"],
+      "expected_points": ["pensión", "alimentos", "menor"],
+      "forbidden": ["desalojo", "despido"]
+    },
+    {
+      "id": "PE-CONS-01",
+      "country": "PERU",
+      "legal_area": "consumidor",
+      "mode": "cliente",
+      "title": "Garantía de producto defectuoso",
+      "query": "Compré un refrigerador y a los dos meses dejó de enfriar. La tienda dice que no me lo puede cambiar. ¿Qué me corresponde por la garantía?",
+      "expected_references": ["Ley 29571", "Código de Protección y Defensa del Consumidor"],
+      "expected_points": ["garantía", "consumidor", "cambio"],
+      "forbidden": ["código civil", "código penal"]
+    },
+    {
+      "id": "PE-TRIB-01",
+      "country": "PERU",
+      "legal_area": "tributario",
+      "mode": "abogado",
+      "title": "Declaración del impuesto a la renta",
+      "query": "Un contribuyente recibió ingresos por alquiler de un departamento este año y no sabe si debe declarar renta. ¿Cuál es la obligación tributaria aplicable?",
+      "expected_references": ["D.L. 774", "Ley del Impuesto a la Renta"],
+      "expected_points": ["renta", "declaración", "arrendamiento"],
+      "forbidden": ["impuesto al valor agregado", "alcabala"]
+    },
+    {
+      "id": "PE-PROC-01",
+      "country": "PERU",
+      "legal_area": "laboral",
+      "mode": "abogado",
+      "title": "Demanda laboral por horas extra",
+      "query": "Un trabajador labora 10 horas diarias sin pago de horas extras y quiere demandar a su empleador. ¿Cuál es la vía procesal y el plazo?",
+      "expected_references": ["Ley 29497", "Constitución Política del Perú"],
+      "expected_points": ["horas extras", "jornada", "demanda"],
+      "forbidden": ["diligencia de embargo", "tercería"]
+    },
+    {
+      "id": "CL-PEN-01",
+      "country": "CHILE",
+      "legal_area": "penal",
+      "mode": "cliente",
+      "title": "Usurpación de vivienda desocupada",
+      "query": "Entré a una casona desocupada que no es mía y ahora el dueño quiere que salga. ¿Qué delito cometo y qué me puede pasar?",
+      "expected_references": ["CÓDIGO PENAL"],
+      "expected_points": ["usurpación"],
+      "forbidden": ["código civil", "pagaré"]
+    },
+    {
+      "id": "CL-LAB-01",
+      "country": "CHILE",
+      "legal_area": "laboral",
+      "mode": "cliente",
+      "title": "Despido injustificado",
+      "query": "Me despidieron sin causa justificada y llevo 5 años en la empresa. ¿Cuánto me corresponde de indemnización por años de servicio?",
+      "expected_references": ["CÓDIGO DEL TRABAJO"],
+      "expected_points": ["indemnización", "años de servicio"],
+      "forbidden": ["código civil", "vale de vista"]
+    },
+    {
+      "id": "CL-FAM-01",
+      "country": "CHILE",
+      "legal_area": "familia",
+      "mode": "cliente",
+      "title": "Pensión de alimentos impaga",
+      "query": "Mi expareja no quiere pagar la pensión de alimentos de nuestro hijo. ¿Qué puedo hacer para que la pague?",
+      "expected_references": ["14.908", "CÓDIGO CIVIL"],
+      "expected_points": ["pensión", "alimentos", "apremio"],
+      "forbidden": ["código penal", "usurpación"]
+    },
+    {
+      "id": "CL-CONS-01",
+      "country": "CHILE",
+      "legal_area": "consumidor",
+      "mode": "cliente",
+      "title": "Garantía legal de producto",
+      "query": "Compré un televisor y a los dos meses dejó de funcionar. La tienda no quiere cambiarlo. ¿Qué me corresponde por garantía legal?",
+      "expected_references": ["19.496"],
+      "expected_points": ["garantía", "cambio", "consumidor"],
+      "forbidden": ["código civil", "renta"]
+    },
+    {
+      "id": "CL-TRIB-01",
+      "country": "CHILE",
+      "legal_area": "tributario",
+      "mode": "abogado",
+      "title": "Impuesto a la renta",
+      "query": "Un contribuyente chileno vendió un departamento este año con ganancia. ¿Debe declarar el impuesto a la renta por esa venta?",
+      "expected_references": ["IMPUESTO A LA RENTA"],
+      "expected_points": ["renta", "ganancia", "impuesto"],
+      "forbidden": ["impuesto a la herencia", "código civil"]
+    },
+    {
+      "id": "CL-SOC-01",
+      "country": "CHILE",
+      "legal_area": "societario",
+      "mode": "abogado",
+      "title": "Sociedad comercial y responsabilidad",
+      "query": "Quiero formar una sociedad comercial en Chile con un socio. ¿Qué tipo de sociedad nos conviene y qué responsabilidad tenemos?",
+      "expected_references": ["CÓDIGO DE COMERCIO"],
+      "expected_points": ["sociedad", "constitución", "responsabilidad"],
+      "forbidden": ["despido", "pensión"]
+    },
+    {
+      "id": "CL-FAM-02",
+      "country": "CHILE",
+      "legal_area": "familia",
+      "mode": "cliente",
+      "title": "Divorcio",
+      "query": "Mi esposo y yo llevamos 2 años separados y quiero divorciarme. Hemos vivido separados todo ese tiempo. ¿Me corresponde la causal de cese de convivencia?",
+      "expected_references": ["MATRIMONIO CIVIL"],
+      "expected_points": ["divorcio", "cese de convivencia"],
+      "forbidden": ["adulterio", "secuestro"]
+    },
+    {
+      "id": "CL-CIV-01",
+      "country": "CHILE",
+      "legal_area": "civil",
+      "mode": "cliente",
+      "title": "Herencia sin testamento",
+      "query": "Mi padre falleció sin dejar testamento. ¿Qué porcentaje me corresponde a mí como hijo?",
+      "expected_references": ["CÓDIGO CIVIL"],
+      "expected_points": ["herencia", "sucesión", "testamento", "legítima"],
+      "forbidden": ["código penal", "alimentos"]
+    }
+  ]
+}
