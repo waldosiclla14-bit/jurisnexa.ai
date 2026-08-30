@@ -9,7 +9,7 @@
       "mode": "cliente",
       "title": "Despido arbitrario sin causa",
       "query": "Me despidieron de mi trabajo sin ninguna causa. Llevo 4 años en la empresa y he trabajado bien. ¿Qué derechos tengo y qué puedo reclamar?",
-      "expected_references": ["Constitución Política del Perú", "D.S. 003-97-TR", "D.L. 728"],
+      "expected_references": ["Constitución Política del Perú", "Productividad y Competitividad"],
       "expected_points": ["despido arbitrario", "indemnización"],
       "forbidden": ["violencia", "carcél"]
     },
@@ -20,7 +20,7 @@
       "mode": "cliente",
       "title": "Usurpación de inmueble",
       "query": "Un vecino ingresó a un terreno desocupado que es de mi familia con un candado nuevo y dice que ya es suyo. ¿Qué delito es eso y qué puedo hacer?",
-      "expected_references": ["Código Penal de 1991", "D.L. 635"],
+      "expected_references": ["Código Penal de 1991"],
       "expected_points": ["usurpación", "despojo"],
       "forbidden": ["propina", "cohecho"]
     },
@@ -75,7 +75,7 @@
       "mode": "abogado",
       "title": "Declaración del impuesto a la renta",
       "query": "Un contribuyente recibió ingresos por alquiler de un departamento este año y no sabe si debe declarar renta. ¿Cuál es la obligación tributaria aplicable?",
-      "expected_references": ["D.L. 774", "Ley del Impuesto a la Renta"],
+      "expected_references": ["Ley del Impuesto a la Renta"],
       "expected_points": ["renta", "declaración", "arrendamiento"],
       "forbidden": ["impuesto al valor agregado", "alcabala"]
     },
@@ -86,7 +86,7 @@
       "mode": "abogado",
       "title": "Demanda laboral por horas extra",
       "query": "Un trabajador labora 10 horas diarias sin pago de horas extras y quiere demandar a su empleador. ¿Cuál es la vía procesal y el plazo?",
-      "expected_references": ["Ley 29497", "Constitución Política del Perú"],
+      "expected_references": ["Nueva Ley Procesal del Trabajo", "Productividad y Competitividad"],
       "expected_points": ["horas extras", "jornada", "demanda"],
       "forbidden": ["diligencia de embargo", "tercería"]
     },

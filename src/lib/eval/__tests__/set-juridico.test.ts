@@ -3,6 +3,7 @@ import path from 'path';
 import setJuridico from '../../../../data/evals/set-juridico.json';
 import { LEGAL_AREAS, Country, LegalArea } from '@/types';
 import { searchChileanLawsWithSources } from '@/lib/rag/chilean-law-search';
+import { searchPeruvianLawsWithSources } from '@/lib/rag/peruvian-law-search';
 import { analyzeLegalCase } from '@/lib/engines';
 import { getSystemPromptWithRAG } from '@/lib/prompts/system';
 import { getSystemPromptWithLegalEngine } from '@/lib/prompts/legal-diagnosis';
@@ -120,13 +121,27 @@ describe('set jurídico — Perú: coherencia del conocimiento base', () => {
   });
 });
 
+describe('set jurídico — Perú: recuperación determinística (corpus versionado pe)', () => {
+  const peru = scenarios.filter((s) => s.country === 'PERU');
+
+  it.each(peru.map((s) => [s.id, s] as const))('%s', (_id, s) => {
+    const res = searchPeruvianLawsWithSources(s.query, 5);
+    expect(res.sources.length, `${s.id} no recuperó ninguna fuente`).toBeGreaterThan(0);
+    const hit = res.sources.some((src) => containsAny(src.title, s.expected_references));
+    expect(hit, `${s.id}: ninguna fuente citó ${s.expected_references.join(' | ')} → ${res.sources.map(x => x.title).join(' ; ')}`).toBe(true);
+  });
+});
+
 describe.skipIf(!hasAnyLLMKey())('set jurídico — respuesta LLM real (requiere API key)', () => {
   const sample = scenarios.filter((s) =>
     ['CL-PEN-01', 'CL-LAB-01', 'CL-CONS-01', 'PE-PEN-01', 'PE-CIV-01', 'PE-CONS-01'].includes(s.id)
   );
 
   async function gradeScenario(s: EvalScenario): Promise<{ text: string; structure: boolean; sources: boolean; points: boolean; forbidden: boolean }> {
-    const ragContext = s.country === 'CHILE' ? searchChileanLawsWithSources(s.query, 5).contextString : '';
+    const ragContext =
+      s.country === 'CHILE'
+        ? searchChileanLawsWithSources(s.query, 5).contextString
+        : searchPeruvianLawsWithSources(s.query, 5).contextString;
 
     let systemPrompt: string;
     if (s.country === 'CHILE') {
