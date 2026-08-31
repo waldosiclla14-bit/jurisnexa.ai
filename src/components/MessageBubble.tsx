@@ -211,11 +211,21 @@ interface ChatSource {
 function normalizeMarkdownLines(content: string): string[] {
   let text = content;
 
-  // ---### Título  →  ---\n### Título   (y variantes * o _)
-  text = text.replace(/(-{3,}|\*{3,}|_{3,})\s*(#{1,6})\s+/g, '$1\n$2 ');
+  // 0) *Nota:...* al inicio → ### Nota ; *...*---### → --- separador
+  text = text.replace(/^\s*\*([^*]+)\*/g, '### $1');
+  text = text.replace(/\*([^*]+)\*---###/g, '\n---\n\n###');
 
-  // ...## Título  →  ...\n## Título   (encabezado pegado al final de un párrafo)
+  // 1) ---### al inicio → ---\n\n###
+  text = text.replace(/^(-{3,})\s*(#{1,6})\s*/g, '$1\n\n$2 ');
+
+  // 2) ...---### → ...\n---\n\n### (inserta salto ANTES de ---)
+  text = text.replace(/([^\n])(-{3,})\s*(#{1,6})\s*/g, '$1\n$2\n\n$3 ');
+
+  // 3) ...## Título → ...\n## Título (encabezado pegado al final de un párrafo)
   text = text.replace(/([^\n#])\s*(#{1,6}\s+)/g, '$1\n$2');
+
+  // 4) Separa heading text pegado al párrafo: ### ResumenSi → ### Resumen\n\nSi
+  text = text.replace(/(###\s+.+?)([a-záéíóúñ])([A-ZÁÉÍÓÚ])/g, '$1$2\n\n$3');
 
   return text.split('\n');
 }

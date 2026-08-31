@@ -6,7 +6,18 @@ export function ensureLegalStructure(content: string): string {
   let text = content.trim();
   if (!text) return text;
 
-  // 0) Normaliza títulos que vienen sin markdown: **Resumen:**, Resumen:, 1. Resumen ejecutivo
+  // 0) Normaliza ---### como separador de secciones (el LLM los pega sin saltos de línea)
+  //    *Nota:...* al inicio → ### Nota ; *...*---### → --- separador
+  text = text.replace(/^\s*\*([^*]+)\*/g, '### $1');
+  text = text.replace(/\*([^*]+)\*---###/g, '\n---\n\n###');
+  // ---### al inicio → ---\n\n###
+  text = text.replace(/^(-{3,})\s*(#{1,6})\s*/g, '$1\n\n$2 ');
+  // ...---### → ...\n---\n\n### (inserta salto ANTES de ---)
+  text = text.replace(/([^\n])(-{3,})\s*(#{1,6})\s*/g, '$1\n$2\n\n$3 ');
+  // Separa heading text pegado al párrafo: ### ResumenSi → ### Resumen\n\nSi
+  text = text.replace(/(###\s+.+?)([a-záéíóúñ])([A-ZÁÉÍÓÚ])/g, '$1$2\n\n$3');
+
+  // 0b) Normaliza títulos que vienen sin markdown: **Resumen:**, Resumen:, 1. Resumen ejecutivo
   text = text
     // **Resumen:** o **1. Resumen** -> ### Resumen
     .replace(/^\s*\*\*\s*(.+?)\s*\*\*\s*:?\s*$/gm, '### $1')

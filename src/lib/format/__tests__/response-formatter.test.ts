@@ -27,4 +27,16 @@ describe('ensureLegalStructure', () => {
     const out = ensureLegalStructure(txt);
     expect(out).toContain('\n1. Primer');
   });
+
+  it('separa ---### pegado al texto y heading text junto al párrafo', () => {
+    const txt = '*Nota: No hay fuentes.*---### ResumenSi en Chile la Comisión rechazó tu solicitud.---### Análisis jurídicoEn Chile el refugio se rige por la Ley 20.430.';
+    const out = ensureLegalStructure(txt);
+    expect(out).toContain('### Nota');
+    expect(out).toContain('### Resumen');
+    expect(out).toContain('### Análisis jurídico');
+    expect(out).toContain('Si en Chile');
+    expect(out).toContain('En Chile el refugio');
+    expect(out).toMatch(/### Resumen\n\nSi en Chile/);
+    expect(out).toMatch(/### Análisis jurídico\n\nEn Chile/);
+  });
 });
