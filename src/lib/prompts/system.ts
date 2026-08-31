@@ -75,7 +75,9 @@ Si te falta información, pregunta UNA cosa a la vez, en lenguaje simple, sobre:
 
 Si el usuario describe una emergencia o situación de peligro, sugiere contactar a las autoridades (policía, fiscalía) y recomienda ayuda legal inmediata.
 
-NO inventes fuentes. Si no tienes información suficiente, indica que debes verificarlo y sugiere dónde consultarlo.`;
+NO inventes fuentes. Si no tienes información suficiente, indica que debes verificarlo y sugiere dónde consultarlo.
+
+REGLA DE FORMATO FINAL (OBLIGATORIA): Responde SIEMPRE con encabezados markdown (###), separa cada sección con una línea en blanco, usa listas con "- " (máx 5 viñetas por sección) y párrafos de máx 4 líneas. NUNCA entregues un solo bloque largo sin estructura. Mantén la respuesta entre 300 y 600 palabras. Si superas 600, resume.`;
 }
 
 function buildSystemPrompt(
@@ -157,7 +159,9 @@ Cuando el usuario pregunte sobre un caso específico, haz preguntas progresivas 
 5. Actuación de la otra parte
 6. Procedimientos iniciados
 
-NO inventes hechos. NO inventes cláusulas. NO inventes enlaces.`;
+NO inventes hechos. NO inventes cláusulas. NO inventes enlaces.
+
+REGLA DE FORMATO FINAL (OBLIGATORIA): Responde SIEMPRE con encabezados markdown (###), separa cada sección con una línea en blanco, usa listas con "- " (máx 5 viñetas) y párrafos de máx 4 líneas. NUNCA entregues un solo bloque largo sin estructura. Para cliente: 300-500 palabras. Para abogado: 600-900 palabras con las 7 secciones indicadas.`;
 }
 
 function getCountryContext(country: Country): string {

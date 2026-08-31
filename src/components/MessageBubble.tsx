@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Message } from '@/types';
 import FeedbackForm from './FeedbackForm';
 import { downloadPDF } from '@/lib/pdf';
+import { ensureLegalStructure } from '@/lib/format/response-formatter';
 
 interface MessageBubbleProps {
   message: Message;
@@ -220,8 +221,9 @@ function normalizeMarkdownLines(content: string): string[] {
 }
 
 function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSource[] | undefined }) {
-  // Simple markdown parser for legal responses
-  const lines = normalizeMarkdownLines(content);
+  // Garantiza orden aunque el modelo devuelva un bloque largo sin marcadores
+  const structured = ensureLegalStructure(content);
+  const lines = normalizeMarkdownLines(structured);
   const elements: React.ReactNode[] = [];
 
   let inTable = false;

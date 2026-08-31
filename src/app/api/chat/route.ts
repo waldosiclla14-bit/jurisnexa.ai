@@ -218,9 +218,10 @@ export async function POST(request: NextRequest) {
           });
           controller.enqueue(encoder.encode(`__META__${metadata}\n`));
 
+          const maxTokens = tipoUsuario === 'abogado' ? 2600 : 1700;
           for await (const chunk of provider.chat(messages, {
-            maxTokens: 4096,
-            temperature: 0.3,
+            maxTokens,
+            temperature: 0.2,
             fileData: body.fileData,
           })) {
             assistantContent += chunk;

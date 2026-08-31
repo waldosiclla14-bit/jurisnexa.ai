@@ -11,7 +11,7 @@ export function buildLegalAnalysisPrompt(
   const areaLabel = legalArea ? LEGAL_AREA_LABELS[legalArea] : 'todas las áreas';
   const modeBlock = modeSection(analysis.mode);
   const ragSection = ragContext
-    ? `\n\nCONTEXTO DOCUMENTAL ADICIONAL (documentos subidos y búsqueda RAG):\n${ragContext.slice(0, 12000)}\n`
+    ? `\n\nCONTEXTO DOCUMENTAL ADICIONAL (documentos subidos y búsqueda RAG):\n${ragContext.slice(0, 8000)}\n`
     : '';
   const lexChileSection = country === 'CHILE' ? `\n\n${LEXCHILE_METHODOLOGY}\n` : '';
 
@@ -21,7 +21,7 @@ ${modeBlock}
 ${lexChileSection}
 
 === ANÁLISIS AUTOMATIZADO DEL MOTOR (ya ejecutado sobre el corpus chileno local) ===
-${analysis.contextString.slice(0, 16000)}
+${analysis.contextString.slice(0, 8000)}
 === FIN ANÁLISIS AUTOMATIZADO ===
 ${ragSection}
 REGLAS HARD (obligatorias, sin excepción):
@@ -92,7 +92,9 @@ Según varíen los hechos aún no aclarados.
 Vías posibles (cautelar, demanda, denuncia), tribunal competente por materia y pasos inmediatos. No garantizar resultados.
 ## 12. Información faltante (preguntas necesarias)
 Solo lo indispensable para cambiar la conclusión (UNA pregunta a la vez, priorizando el motor).
-${conclusion}`;
+${conclusion}
+
+REGLA FINAL: Respeta estrictamente el orden numérico, usa encabezados markdown, separa secciones con línea en blanco, listas con "- " (máx 5 puntos) y párrafos cortos (máx 4 líneas). Nunca un bloque largo sin estructura.`;
     case 'investigacion':
       return `\nFORMATO DE RESPUESTA — INFORME DE INVESTIGACIÓN JURÍDICA (estructura ÚNICA):
 
@@ -117,7 +119,9 @@ ${usrBlock ? '\n' + usrBlock : ''}
 ### Plazos que debes vigilar
 ### Documentos que te conviene reunir
 ### A dónde acudir
-${conclusion}`;
+${conclusion}
+
+REGLA FINAL: Usa SIEMPRE encabezados ###, separa con línea en blanco, listas con "- " y párrafos cortos. Nunca un bloque largo sin orden.`;
   }
 }
 
