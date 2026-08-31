@@ -885,6 +885,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
 
           <p className="mt-2 text-center text-[10px] text-zinc-600">
             La información proporcionada es de carácter general y no sustituye el asesoramiento de un abogado.
+            <span className="ml-2 opacity-60">· {process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0,7) || 'dev'}</span>
           </p>
         </div>
       </div>

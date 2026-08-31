@@ -6,7 +6,16 @@ export function ensureLegalStructure(content: string): string {
   let text = content.trim();
   if (!text) return text;
 
-  const hasHeading = /^#{1,6}\s/m.test(text);
+  // 0) Normaliza títulos que vienen sin markdown: **Resumen:**, Resumen:, 1. Resumen ejecutivo
+  text = text
+    // **Resumen:** o **1. Resumen** -> ### Resumen
+    .replace(/^\s*\*\*\s*(.+?)\s*\*\*\s*:?\s*$/gm, '### $1')
+    // Línea corta que termina en : y parece título (ej. "Resumen:", "Análisis jurídico:")
+    .replace(/^\s*([A-ZÁÉÍÓÚ][\w\s\-–—]{2,50}):\s*$/gm, '### $1')
+    // "1. Resumen ejecutivo" aislado como título (corto, Title Case)
+    .replace(/^\s*(\d+)\.\s+([A-ZÁÉÍÓÚ][^.!?\n]{2,45})\s*$/gm, '### $1. $2');
+
+  const hasHeading = /^#{1,6}\s/m.test(text) || /^\s*\*\*.+\*\*/m.test(content);
   const hasList = /(^|\n)\s*(- |\d+\.\s)/m.test(text);
 
   // 1) Si no hay ningún encabezado y es largo, antepone uno genérico
