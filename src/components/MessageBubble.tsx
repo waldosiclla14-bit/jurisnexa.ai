@@ -129,7 +129,7 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
         </div>
 
         {!isUser && !message.isStreaming && (
-          <SourcesBlock sources={message.metadata?.sources as { title: string; url: string | null }[] | undefined} />
+          <SourcesBlock sources={message.metadata?.sources as { title: string; url: string | null }[] | undefined} confidenceScore={message.metadata?.confidenceScore as number | undefined} confidenceLevel={message.metadata?.confidenceLevel as string | undefined} ragUsed={message.metadata?.ragUsed as boolean | undefined} />
         )}
 
         {!isUser && !message.isStreaming && (
@@ -340,6 +340,17 @@ function LegalMarkdown({ content, sources }: { content: string; sources?: ChatSo
         </div>
       );
     }
+    // Methodology badge
+    else if (/^METODOLOGÍA[:\s]/.test(trimmed)) {
+      flushList();
+      elements.push(
+        <div key={key++} className="my-4 flex flex-wrap items-center gap-1.5 rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] px-3 py-2 sm:px-4 sm:py-2.5">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="flex-shrink-0 text-emerald-400"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-400">Metodología</span>
+          <span className="text-[12px] text-zinc-300">{trimmed.replace(/^METODOLOGÍA[:\s]*/, '')}</span>
+        </div>
+      );
+    }
     // Regular text
     else if (trimmed !== '') {
       flushList();
@@ -515,16 +526,42 @@ function extractTitle(content: string): string {
   return content.substring(0, 80).replace(/\n/g, ' ').trim();
 }
 
-function SourcesBlock({ sources }: { sources: ChatSource[] | undefined }) {
-  if (!sources || sources.length === 0) return null;
+function SourcesBlock({ sources, confidenceScore, confidenceLevel, ragUsed }: { sources?: ChatSource[] | undefined; confidenceScore?: number; confidenceLevel?: string; ragUsed?: boolean }) {
+  if (!sources || sources.length === 0) {
+    return (
+      <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-950 p-3 sm:p-4">
+        <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Sin fuentes verificadas</p>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-400">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Conocimiento general
+          </span>
+          {confidenceLevel && (
+            <span className="text-[11px] text-zinc-500">Confianza: {confidenceLevel} ({confidenceScore}/99)</span>
+          )}
+        </div>
+        <p className="mt-2 text-[12px] leading-[1.5] text-zinc-400">Esta respuesta se basa en conocimiento general sobre legislación, no en fuentes documentales verificadas. Para mayor precisión, sube un documento o consulta directamente con un abogado.</p>
+      </div>
+    );
+  }
   const displaySources = sources.slice(0, 8);
+  const trust = (confidenceScore ?? 50);
+  const trustColor = trust >= 70 ? 'emerald' : trust >= 40 ? 'amber' : 'red';
+  const trustLabel = trust >= 70 ? 'ALTA' : trust >= 40 ? 'MEDIA' : 'BAJA';
   return (
     <div className="mt-4 rounded-xl border border-zinc-800 bg-zinc-950 p-3 sm:p-4">
-      <p className="mb-2.5 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Fuentes consultadas · {sources.length}</p>
+      <div className="mb-2.5 flex items-center justify-between">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">Fuentes verificadas · {sources.length}</p>
+        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold leading-none text-${trustColor}-400`} style={{ backgroundColor: `rgba(16,185,129,0.1)` }}>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+          {trustLabel} confianza ({trust}/99)
+        </span>
+      </div>
       <div className="flex flex-col gap-2">
         {displaySources.map((src, i) => (
           <div key={i} className="flex items-start gap-2.5 text-[13px] leading-[1.5] text-zinc-400 sm:text-sm">
             <span className="mt-0.5 flex-shrink-0 rounded bg-zinc-800 px-1 py-0.5 text-[10px] font-bold leading-none text-emerald-400">[{i + 1}]</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mt-0.5 flex-shrink-0 text-emerald-500"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             {src.url ? (
               <a href={src.url} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-emerald-400 hover:underline">{src.title}</a>
             ) : (
@@ -533,6 +570,9 @@ function SourcesBlock({ sources }: { sources: ChatSource[] | undefined }) {
           </div>
         ))}
       </div>
+      {ragUsed !== false && (
+        <p className="mt-2.5 text-[10px] text-zinc-500">Fuentes consultadas en tiempo real · Respuesta trazable y verificable</p>
+      )}
     </div>
   );
 }

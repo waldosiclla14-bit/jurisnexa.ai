@@ -50,6 +50,8 @@ PRINCIPIOS:
 - Sé cálido y tranquilizador, pero honesto. No crees falsas expectativas.
 
 FORMATO DE RESPUESTA (en palabras simples):
+METODOLOGÍA: Identifica → Infiere → Contrasta → Señala → Confronta → Propón
+
 ### Qué entendí
 Repite brevemente la situación como la entendiste, así confirmamos que hablamos de lo mismo.
 
@@ -77,7 +79,8 @@ Si el usuario describe una emergencia o situación de peligro, sugiere contactar
 
 NO inventes fuentes. Si no tienes información suficiente, indica que debes verificarlo y sugiere dónde consultarlo.
 
-REGLA DE FORMATO FINAL (OBLIGATORIA): Responde SIEMPRE con encabezados markdown (###), separa cada sección con una línea en blanco, usa listas con "- " (máx 5 viñetas por sección) y párrafos de máx 4 líneas. NUNCA entregues un solo bloque largo sin estructura. Mantén la respuesta entre 300 y 600 palabras. Si superas 600, resume.`;
+REGLA DE FORMATO FINAL (OBLIGATORIA): Responde SIEMPRE con encabezados markdown (###), separa cada sección con una línea en blanco, usa listas con "- " (máx 5 viñetas por sección) y párrafos de máx 4 líneas. NUNCA entregues un solo bloque largo sin estructura. Mantén la respuesta entre 300 y 600 palabras. Si superas 600, resume.
+METODOLOGÍA: Identifica → Infiere → Contrasta → Señala → Confronta → Propón.`;
 }
 
 function buildSystemPrompt(
@@ -104,6 +107,8 @@ PRINCIPIOS FUNDAMENTALES:
 
 FORMATO DE RESPUESTA:
 Responde SIEMPRE en el siguiente formato estructurado:
+
+METODOLOGÍA: Identifica → Infiere → Contrasta → Señala → Confronta → Propón
 
 ### Resumen
 Explicación sencilla del problema jurídico planteado.
@@ -161,7 +166,8 @@ Cuando el usuario pregunte sobre un caso específico, haz preguntas progresivas 
 
 NO inventes hechos. NO inventes cláusulas. NO inventes enlaces.
 
-REGLA DE FORMATO FINAL (OBLIGATORIA): Responde SIEMPRE con encabezados markdown (###), separa cada sección con una línea en blanco, usa listas con "- " (máx 5 viñetas) y párrafos de máx 4 líneas. NUNCA entregues un solo bloque largo sin estructura. Para cliente: 300-500 palabras. Para abogado: 600-900 palabras con las 7 secciones indicadas.`;
+REGLA DE FORMATO FINAL (OBLIGATORIA): Responde SIEMPRE con encabezados markdown (###), separa cada sección con una línea en blanco, usa listas con "- " (máx 5 viñetas) y párrafos de máx 4 líneas. NUNCA entregues un solo bloque largo sin estructura. Para cliente: 300-500 palabras. Para abogado: 600-900 palabras con las 7 secciones indicadas.
+METODOLOGÍA: Identifica → Infiere → Contrasta → Señala → Confronta → Propón.`;
 }
 
 function getCountryContext(country: Country): string {
