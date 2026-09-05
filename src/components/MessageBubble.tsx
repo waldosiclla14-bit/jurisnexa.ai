@@ -1,10 +1,12 @@
 ﻿'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Message } from '@/types';
 import FeedbackForm from './FeedbackForm';
 import { downloadPDF } from '@/lib/pdf';
 import { ensureLegalStructure } from '@/lib/format/response-formatter';
+import { parseMarkdownToStructure } from '@/lib/response/parser';
+import { LegalResponse } from './legal/LegalResponse';
 
 interface MessageBubbleProps {
   message: Message;
@@ -84,7 +86,12 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
     }
   };
 
-  return (
+  const parsedData = useMemo(
+      () => parseMarkdownToStructure(ensureLegalStructure(message.content), message.isStreaming ?? false),
+      [message.content, message.isStreaming],
+    );
+
+    return (
     <div role="article" aria-label={isUser ? 'Tu mensaje' : 'Respuesta de JurisNexa'} className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
       {!isUser && (
         <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 ring-1 ring-emerald-500/30">
@@ -108,7 +115,11 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           <p className="whitespace-pre-wrap text-[14px] leading-[1.65] sm:text-[15px]">{message.content}</p>
         ) : (
           <div className="max-w-none">
-            <LegalMarkdown content={message.content} sources={message.metadata?.sources as ChatSource[] | undefined} />
+            {!isDocumentDraft ? (
+              <LegalResponse data={parsedData} />
+            ) : (
+              <LegalMarkdown content={message.content} sources={message.metadata?.sources as ChatSource[] | undefined} />
+            )}
           </div>
         )}
 

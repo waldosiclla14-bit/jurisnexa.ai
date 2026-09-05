@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import MessageBubble from '@/components/MessageBubble';
 
-const sampleContent = `## 1. Resumen ejecutivo
+const sampleContent = `SEÑOR JUEZ:
+
+## 1. Resumen ejecutivo
 
 Podrías enfrentar un procedimiento de **usurpación** [1] según el Código Penal.
 
@@ -75,7 +77,7 @@ describe('MessageBubble — legibilidad del markdown', () => {
       <MessageBubble
         message={{
           ...message,
-          content: 'Texto antes\n\n---\n\nTexto después',
+          content: 'SEÑOR JUEZ\nTexto antes\n\n---\n\nTexto después',
         }}
       />
     );
@@ -88,7 +90,7 @@ describe('MessageBubble — legibilidad del markdown', () => {
       <MessageBubble
         message={{
           ...message,
-          content: '##**Resumen de tu caso**\n\nTexto del cuerpo.',
+          content: 'SEÑOR JUEZ\n##**Resumen de tu caso**\n\nTexto del cuerpo.',
         }}
       />
     );
@@ -102,7 +104,7 @@ describe('MessageBubble — legibilidad del markdown', () => {
       <MessageBubble
         message={{
           ...message,
-          content: 'Plazo | Fuente | Observación\n1 año | CP 457 | Vigente\n2 años | CP 458 | Derogado',
+          content: 'SEÑOR JUEZ\nPlazo | Fuente | Observación\n1 año | CP 457 | Vigente\n2 años | CP 458 | Derogado',
         }}
       />
     );
@@ -116,7 +118,7 @@ describe('MessageBubble — legibilidad del markdown', () => {
       <MessageBubble
         message={{
           ...message,
-          content: 'El plazo según el art. 1 | el art. 2 no está claro.',
+          content: 'SEÑOR JUEZ\nEl plazo según el art. 1 | el art. 2 no está claro.',
         }}
       />
     );
@@ -129,7 +131,7 @@ describe('MessageBubble — legibilidad del markdown', () => {
       <MessageBubble
         message={{
           ...message,
-          content: 'Introducción\n---### Análisis jurídico\nTexto',
+          content: 'SEÑOR JUEZ\nIntroducción\n---### Análisis jurídico\nTexto',
         }}
       />
     );
@@ -143,7 +145,7 @@ describe('MessageBubble — legibilidad del markdown', () => {
       <MessageBubble
         message={{
           ...message,
-          content: 'Texto de cierre del párrafo## Conclusión\nDetalle.',
+          content: 'SEÑOR JUEZ\nTexto de cierre del párrafo## Conclusión\nDetalle.',
         }}
       />
     );
