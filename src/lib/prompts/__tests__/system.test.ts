@@ -53,22 +53,26 @@ describe('getSystemPromptWithRAG', () => {
 });
 
 describe('getSystemPromptWithRAG - modo cliente', () => {
-  it('usa lenguaje sencillo y estructura de orientación ciudadana', () => {
+  it('usa el rol de asistente jurídico migratorio', () => {
     const prompt = getSystemPromptWithRAG('PERU', undefined, '', 'cliente');
-    expect(prompt).toContain('UN CLIENTE');
-    expect(prompt).toContain('### Qué entendí');
-    expect(prompt).toContain('### Tus derechos en resumen');
-    expect(prompt).toContain('### Qué puedes hacer');
+    expect(prompt).toContain('JurisNexa');
+    expect(prompt).toContain('derecho migratorio');
   });
 
-  it('no muestra los epígrafes profesionales del modo abogado', () => {
+  it('tiene estructura de plantilla con saludo y respuesta rápida', () => {
     const prompt = getSystemPromptWithRAG('PERU', undefined, '', 'cliente');
-    expect(prompt).not.toContain('### Análisis jurídico');
-    expect(prompt).not.toContain('Cita siempre las fuentes');
+    expect(prompt).toContain('Saludo contextual');
+    expect(prompt).toContain('Respuesta rápida');
+  });
+
+  it('incluye normativa aplicable y fuentes', () => {
+    const prompt = getSystemPromptWithRAG('PERU', undefined, '', 'cliente');
+    expect(prompt).toContain('Normativa aplicable');
+    expect(prompt).toContain('Fuentes');
   });
 
   it('advierte que no sustituye a un abogado', () => {
     const prompt = getSystemPromptWithRAG('PERU', undefined, '', 'cliente');
-    expect(prompt).toContain('NO sustituye la opinión de un abogado');
+    expect(prompt).toContain('no constituye asesoría legal profesional');
   });
 });

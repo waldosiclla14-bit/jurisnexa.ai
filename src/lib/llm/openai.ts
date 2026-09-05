@@ -7,17 +7,15 @@ export class OpenAIProvider implements LLMProvider {
 
   constructor() {
     this.apiKey = process.env.OPENAI_API_KEY || '';
-    this.model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    this.model = process.env.OPENAI_MODEL || 'gpt-4o';
   }
 
   async *chat(
     messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
-    options?: { maxTokens?: number; temperature?: number }
+    options?: { maxTokens?: number; temperature?: number; topP?: number; frequencyPenalty?: number; presencePenalty?: number; fileData?: { name: string; type: string; size: number; base64: string } }
   ): AsyncGenerator<string> {
     if (!this.apiKey) {
-      // Demo mode: return simulated response
       const response = getDemoResponse(messages);
-      // Simulate streaming character by character
       for (const char of response) {
         yield char;
         await new Promise(resolve => setTimeout(resolve, 10));
@@ -34,8 +32,11 @@ export class OpenAIProvider implements LLMProvider {
       body: JSON.stringify({
         model: this.model,
         messages,
-        max_tokens: options?.maxTokens || 4096,
-        temperature: options?.temperature || 0.3,
+        max_tokens: options?.maxTokens || 800,
+        temperature: options?.temperature ?? 0.3,
+        top_p: options?.topP ?? 0.9,
+        frequency_penalty: options?.frequencyPenalty ?? 0.2,
+        presence_penalty: options?.presencePenalty ?? 0.1,
         stream: true,
       }),
     });

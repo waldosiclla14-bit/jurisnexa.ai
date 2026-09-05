@@ -131,7 +131,7 @@ export interface ChatResponse {
 export interface LLMProvider {
   chat(
     messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
-    options?: { maxTokens?: number; temperature?: number; fileData?: { name: string; type: string; size: number; base64: string } }
+    options?: { maxTokens?: number; temperature?: number; topP?: number; frequencyPenalty?: number; presencePenalty?: number; fileData?: { name: string; type: string; size: number; base64: string } }
   ): AsyncGenerator<string>;
 }
 

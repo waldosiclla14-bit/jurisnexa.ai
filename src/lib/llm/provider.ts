@@ -63,7 +63,7 @@ export class FallbackProvider implements LLMProvider {
 
   async *chat(
     messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
-    options?: { maxTokens?: number; temperature?: number; fileData?: { name: string; type: string; size: number; base64: string } }
+    options?: { maxTokens?: number; temperature?: number; topP?: number; frequencyPenalty?: number; presencePenalty?: number; fileData?: { name: string; type: string; size: number; base64: string } }
   ): AsyncGenerator<string> {
     let lastError: unknown = null;
     for (const provider of this.providers) {

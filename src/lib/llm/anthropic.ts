@@ -12,7 +12,7 @@ export class AnthropicProvider implements LLMProvider {
 
   async *chat(
     messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
-    options?: { maxTokens?: number; temperature?: number }
+    options?: { maxTokens?: number; temperature?: number; topP?: number; frequencyPenalty?: number; presencePenalty?: number; fileData?: { name: string; type: string; size: number; base64: string } }
   ): AsyncGenerator<string> {
     if (!this.apiKey) {
       // Demo mode: return simulated response

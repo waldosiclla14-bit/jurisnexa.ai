@@ -221,7 +221,10 @@ export async function POST(request: NextRequest) {
           const maxTokens = tipoUsuario === 'abogado' ? 2600 : 1700;
           for await (const chunk of provider.chat(messages, {
             maxTokens,
-            temperature: 0.2,
+            temperature: 0.3,
+            topP: 0.9,
+            frequencyPenalty: 0.2,
+            presencePenalty: 0.1,
             fileData: body.fileData,
           })) {
             assistantContent += chunk;

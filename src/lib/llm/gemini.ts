@@ -20,7 +20,7 @@ export class GeminiProvider implements LLMProvider {
 
   async *chat(
     messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
-    options?: { maxTokens?: number; temperature?: number; fileData?: GeminiFileData }
+    options?: { maxTokens?: number; temperature?: number; topP?: number; frequencyPenalty?: number; presencePenalty?: number; fileData?: GeminiFileData }
   ): AsyncGenerator<string> {
     if (!this.apiKey) {
       const response = getDemoResponse(messages);
