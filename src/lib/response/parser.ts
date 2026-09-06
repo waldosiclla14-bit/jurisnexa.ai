@@ -1,6 +1,6 @@
 import { LegalResponseData, LawReference, LawSource, Section, EvidenceItem, RiskItem, WarningItem, ConfidenceData, SectionStatus } from './types';
 
-const HEADING_RE = /^#{1,4}\s+(.*)$/;
+const HEADING_RE = /^#{1,6}\s+(.*)$/;
 
 type SectionKey = 'conclusion' | 'analysis' | 'norms' | 'risks' | 'actions' | 'deadlines' | 'sources' | 'jurisprudence' | 'doctrine' | 'legalIssue' | 'unclassified';
 

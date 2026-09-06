@@ -22,9 +22,9 @@ export function ensureLegalStructure(content: string): string {
     // **Resumen:** o **1. Resumen** -> ### Resumen
     .replace(/^\s*\*\*\s*(.+?)\s*\*\*\s*:?\s*$/gm, '### $1')
     // Línea corta que termina en : y parece título (ej. "Resumen:", "Análisis jurídico:")
-    .replace(/^\s*([A-ZÁÉÍÓÚ][\w\s\-–—]{2,50}):\s*$/gm, '### $1')
+    .replace(/^\s*([\wÁÉÍÓÚÑáéíóúñ][\wÁÉÍÓÚÑáéíóúñ\s\-–—]{2,50}):\s*$/gim, '### $1')
     // "1. Resumen ejecutivo" aislado como título (corto, Title Case)
-    .replace(/^\s*(\d+)\.\s+([A-ZÁÉÍÓÚ][^.!?\n]{2,45})\s*$/gm, '### $1. $2');
+    .replace(/^\s*(\d+)\.\s+([\wÁÉÍÓÚÑáéíóúñ][^.!?\n]{2,45})\s*$/gim, '### $1. $2');
 
   const hasHeading = /^#{1,6}\s/m.test(text) || /^\s*\*\*.+\*\*/m.test(content);
   const hasList = /(^|\n)\s*(- |\d+\.\s)/m.test(text);
