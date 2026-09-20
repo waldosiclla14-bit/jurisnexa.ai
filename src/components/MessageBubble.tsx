@@ -8,6 +8,8 @@ import { ensureLegalStructure } from '@/lib/format/response-formatter';
 import { parseMarkdownToStructure } from '@/lib/response/parser';
 import { LegalResponse } from './legal/LegalResponse';
 import { LegalMarkdownRenderer } from './LegalMarkdownRenderer';
+import { StructuredLegalResponse } from './legal/StructuredLegalResponse';
+import type { LegalResponse as LegalResponseType } from '@/lib/legal/types';
 
 interface MessageBubbleProps {
   message: Message;
@@ -87,6 +89,8 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
     }
   };
 
+  const structuredResponse: LegalResponseType | undefined = (message.metadata?.structuredResponse as LegalResponseType | undefined) ?? undefined;
+
   const parsedData = useMemo(() => {
     try {
       return parseMarkdownToStructure(ensureLegalStructure(message.content), message.isStreaming ?? false);
@@ -119,7 +123,9 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           <p className="whitespace-pre-wrap text-[14px] leading-[1.65] sm:text-[15px]">{message.content}</p>
         ) : (
           <div className="max-w-none">
-            {parsedData && !isDocumentDraft ? (
+            {structuredResponse ? (
+              <StructuredLegalResponse response={structuredResponse} />
+            ) : parsedData && !isDocumentDraft ? (
               <LegalResponse data={parsedData} />
             ) : (
               <LegalMarkdownRenderer content={message.content} />

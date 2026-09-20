@@ -10,6 +10,11 @@ import { ChatRequest, Country, LegalArea, UserType } from '@/types';
 import { getCurrentUser } from '@/lib/auth';
 import { analyzeLegalCase } from '@/lib/engines';
 import { getSystemPromptWithLegalEngine } from '@/lib/prompts/legal-diagnosis';
+import { classifyLegalQuery } from '@/lib/legal/classifier';
+import { parseMarkdownToStructure } from '@/lib/response/parser';
+import { buildLegalResponseFromParsed } from '@/lib/legal/builder';
+import type { LegalResponse } from '@/lib/legal/types';
+import { ensureLegalStructure } from '@/lib/format/response-formatter';
 
 async function resolveTipoUsuario(
   request: NextRequest,
@@ -247,6 +252,25 @@ export async function POST(request: NextRequest) {
               } as never);
             } catch (saveError) {
               console.warn('Failed to save assistant message:', saveError);
+            }
+          }
+
+          // Clasificar y construir respuesta estructurada legal
+          let structuredResponse: LegalResponse | null = null;
+          try {
+            const classification = classifyLegalQuery(sanitizedMessage, country, legalArea);
+            const parsed = parseMarkdownToStructure(ensureLegalStructure(assistantContent), false);
+            structuredResponse = buildLegalResponseFromParsed(parsed, classification, country, ragSources.length > 0 ? ragSources.map(s => ({ id: s.id, title: s.title, url: s.url })) : undefined);
+          } catch (structError) {
+            console.warn('Structured response build failed, falling back to raw markdown:', structError);
+          }
+
+          if (structuredResponse) {
+            try {
+              const structureData = JSON.stringify({ structuredResponse });
+              controller.enqueue(encoder.encode(`\n__STRUCTURE__${structureData}\n`));
+            } catch (e) {
+              console.warn('Failed to send structured response:', e);
             }
           }
 

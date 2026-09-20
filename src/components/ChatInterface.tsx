@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Message, Country, LegalArea, LEGAL_AREAS } from '@/types';
+import type { LegalResponse } from '@/lib/legal/types';
 import MessageBubble from './MessageBubble';
 import LegalAreaSelector from './LegalAreaSelector';
 import SuggestedQuestions from './SuggestedQuestions';
@@ -155,6 +156,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
       let fullContent = '';
       let updatePending = false;
       let streamSources: { title: string; url: string | null; similarity: number }[] = [];
+      let streamStructuredResponse: LegalResponse | null = null;
 
       const flushUpdate = () => {
         updatePending = false;
@@ -177,6 +179,10 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
           try { streamSources = JSON.parse(line.slice(11)).sources || []; } catch { /* ignore */ }
           return;
         }
+        if (line.startsWith('__STRUCTURE__')) {
+          try { streamStructuredResponse = JSON.parse(line.slice(13)).structuredResponse || null; } catch { /* ignore */ }
+          return;
+        }
         if (line.startsWith('__ERROR__')) throw new Error(line.slice(9));
         fullContent += line + '\n';
         if (!updatePending) {
@@ -194,7 +200,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
       if (updatePending) flushUpdate();
 
       setMessages((prev) =>
-        prev.map((m) => m.id === assistantMessageId ? { ...m, isStreaming: false, ...(streamSources.length > 0 ? { metadata: { ...m.metadata, sources: streamSources } } : {}) } : m)
+        prev.map((m) => m.id === assistantMessageId ? { ...m, isStreaming: false, ...(streamStructuredResponse ? { metadata: { ...m.metadata, structuredResponse: streamStructuredResponse } } : {}), ...(streamSources.length > 0 ? { metadata: { ...m.metadata, sources: streamSources } } : {}) } : m)
       );
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
@@ -282,6 +288,8 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
         );
       };
 
+      let streamStructuredResponse: LegalResponse | null = null;
+
       const accumulator = createStreamAccumulator((line) => {
         if (line.startsWith('__META__')) {
           try {
@@ -294,6 +302,10 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
         }
         if (line.startsWith('__SOURCES__')) {
           try { streamSources = JSON.parse(line.slice(11)).sources || []; } catch { /* ignore */ }
+          return;
+        }
+        if (line.startsWith('__STRUCTURE__')) {
+          try { streamStructuredResponse = JSON.parse(line.slice(13)).structuredResponse || null; } catch { /* ignore */ }
           return;
         }
         if (line.startsWith('__ERROR__')) {
@@ -317,7 +329,7 @@ export default function ChatInterface({ country, initialConversationId }: ChatIn
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantMessageId
-            ? { ...m, isStreaming: false, ...(streamSources.length > 0 ? { metadata: { ...m.metadata, sources: streamSources } } : {}) }
+            ? { ...m, isStreaming: false, ...(streamStructuredResponse ? { metadata: { ...m.metadata, structuredResponse: streamStructuredResponse } } : {}), ...(streamSources.length > 0 ? { metadata: { ...m.metadata, sources: streamSources } } : {}) }
             : m
         )
       );

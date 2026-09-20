@@ -55,18 +55,22 @@ export class GeminiProvider implements LLMProvider {
     const lastUserMessage = conversationMessages[conversationMessages.length - 1];
     if (!lastUserMessage || lastUserMessage.role !== 'user') return;
 
-    // Build message parts - text + optional file
+    // Build message parts - text + optional file (solo modelos que soportan imágenes)
+    const supportsImages = !this.model.includes('flash') || this.model.includes('pro');
     const parts: (string | { inlineData: { mimeType: string; data: string } })[] = [
       lastUserMessage.content,
     ];
 
-    if (options?.fileData) {
+    if (options?.fileData && supportsImages) {
       parts.push({
         inlineData: {
           mimeType: options.fileData.type,
           data: options.fileData.base64,
         },
       });
+    } else if (options?.fileData && !supportsImages) {
+      yield `\n\n**Archivo no soportado:** El modelo ${this.model} no acepta imágenes adjuntas. Para análisis de documentos visuales, sube el archivo como PDF o consulta con un especialista.`;
+      return;
     }
 
     let retries = 3;

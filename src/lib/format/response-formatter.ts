@@ -16,6 +16,8 @@ export function ensureLegalStructure(content: string): string {
   text = text.replace(/([^\n])(-{3,})\s*(#{1,6})\s*/g, '$1\n$2\n\n$3 ');
   // Separa heading text pegado al párrafo: ### ResumenSi → ### Resumen\n\nSi
   text = text.replace(/(###\s+.+?)([a-záéíóúñ])([A-ZÁÉÍÓÚ])/g, '$1$2\n\n$3');
+  // Separa texto pegado a un heading: texto## Título → texto\n\n## Título
+  text = text.replace(/([^\n#])(#{1,6}\s)/g, '$1\n\n$2');
 
   // 0b) Normaliza títulos que vienen sin markdown: **Resumen:**, Resumen:, 1. Resumen ejecutivo
   text = text
@@ -29,13 +31,11 @@ export function ensureLegalStructure(content: string): string {
   const hasHeading = /^#{1,6}\s/m.test(text) || /^\s*\*\*.+\*\*/m.test(content);
   const hasList = /(^|\n)\s*(- |\d+\.\s)/m.test(text);
 
-  // 1) Si no hay ningún encabezado y es largo, antepone uno genérico
-  if (!hasHeading && text.length > 600) {
-    // Intenta extraer una primera frase como resumen y el resto como análisis
+  // 1) Si no hay ningún encabezado, antepone uno genérico (SIEMPRE, sin importar la longitud)
+  if (!hasHeading) {
     const firstBreak = text.indexOf('\n\n');
     if (firstBreak === -1) {
-      // No hay párrafos: trocea por oraciones
-      text = '### Resumen\n\n' + splitLongParagraph(text).join('\n\n');
+      text = '### Resumen\n\n' + text;
     } else {
       const head = text.slice(0, firstBreak).trim();
       const tail = text.slice(firstBreak).trim();
